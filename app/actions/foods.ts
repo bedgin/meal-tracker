@@ -18,6 +18,7 @@ export type FoodInput = {
   servingWeightUnit?: string | null; // lb, oz, g
   caloriesPerServing: number;
   proteinPerServing: number;
+  isFavorite?: boolean;
 };
 
 export async function getFoods() {
