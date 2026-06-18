@@ -1,21 +1,8 @@
-import { auth } from "@/auth";
-import { NextResponse } from "next/server";
+import NextAuth from "next-auth";
+import { authConfig } from "./auth.config";
 
-export default auth((req) => {
-  const isLoggedIn = !!req.auth;
-  const { pathname } = req.nextUrl;
-
-  const isAuthPage =
-    pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up");
-
-  if (!isLoggedIn && !isAuthPage) {
-    return NextResponse.redirect(new URL("/sign-in", req.url));
-  }
-
-  if (isLoggedIn && isAuthPage) {
-    return NextResponse.redirect(new URL("/", req.url));
-  }
-});
+// Use only the lightweight config in middleware — no Prisma, no bcrypt.
+export default NextAuth(authConfig).auth;
 
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
