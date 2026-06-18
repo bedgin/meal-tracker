@@ -5,7 +5,7 @@ Update it as work is completed so any new session can pick up where we left off.
 
 ---
 
-## Status: Phase 1 — Foundation (complete) → Phase 2 — Screens (next)
+## Status: Phase 2 — Screens (in progress — Main Screen done, Add Ingredient next)
 
 ---
 
@@ -58,7 +58,7 @@ Defined in `prisma/schema.prisma`. Tables:
 
 ## Phase 2 — Screens
 
-- [ ] **Main Screen** — date, cal/protein consumed vs goal, remaining, nav buttons
+- [x] **Main Screen** — date nav (‹ Today ›), calories/protein cards with progress bars, tappable inline goal editing, Add Meal / Add Recipe / Add Food / Add Ingredient / See Details buttons
 - [ ] **Add Ingredient Screen** — form with USDA lookup, save/edit/delete/favorite
 - [ ] **Add Food Screen** — same pattern as ingredient + `items` measure unit
 - [ ] **Add Recipe Screen** — ingredient picker popup, servings, auto cal/protein calc
@@ -96,4 +96,4 @@ Defined in `prisma/schema.prisma`. Tables:
 1. Read this file and `Meal_Tracker_Spec.md` for full context
 2. Check the unchecked boxes above to see what's next
 3. Run `vercel env pull .env.local` to get env vars locally if needed
-4. The next task is: **Main Screen** — date display, cal/protein consumed vs goal, remaining, nav buttons to Add Meal / Add Recipe / Add Food / Add Ingredient / Day Details
+4. The next task is: **Add Ingredient Screen** — form with USDA lookup, save/edit/delete/favorite toggle
