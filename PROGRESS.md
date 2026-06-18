@@ -1,0 +1,99 @@
+# Meal Tracker — Build Progress
+
+This file tracks what has been built, what is next, and key decisions made.
+Update it as work is completed so any new session can pick up where we left off.
+
+---
+
+## Status: Phase 1 — Foundation (in progress)
+
+---
+
+## Infrastructure (Complete)
+
+- [x] GitHub repo: https://github.com/bedgin/meal-tracker
+- [x] Vercel project linked and deployed: https://meal-tracker-tau-topaz.vercel.app
+- [x] Neon Postgres connected (all env vars injected by Vercel integration)
+- [x] Prisma schema written with full data model (see `prisma/schema.prisma`)
+- [x] Next.js 15.3.9, React 19, TypeScript, Tailwind CSS configured
+- [x] `.env.example` documents all required env vars
+
+## Environment Variables (all set in Vercel)
+
+| Variable | Status |
+|---|---|
+| `POSTGRES_PRISMA_URL` | Set (by Neon integration) |
+| `DATABASE_URL_UNPOOLED` | Set (by Neon integration) |
+| `NEXTAUTH_SECRET` | Set |
+| `NEXTAUTH_URL` | Set (`https://meal-tracker-tau-topaz.vercel.app`) |
+| `USDA_API_KEY` | Set |
+
+## Data Model (Complete)
+
+Defined in `prisma/schema.prisma`. Tables:
+- `User` — NextAuth user (id, name, email, emailVerified, image)
+- `Account`, `Session`, `VerificationToken` — NextAuth adapter tables
+- `Ingredient` — user-scoped; servingMeasure + servingWeight + cals/protein + isFavorite
+- `Food` — same shape as Ingredient, plus `items` as a measure unit option
+- `Recipe` — references Ingredients via `RecipeIngredient` join table; has servings + instructions
+- `RecipeIngredient` — amount by measure and/or weight
+- `Meal` — date, time, mealType (Breakfast/Lunch/Dinner/Snack)
+- `MealItem` — joins Meal to Food or Recipe; stores servingsMultiplier + calorie/protein snapshot
+- `Goal` — per user per date; calorieGoal + proteinGoal
+
+**DB not yet migrated** — `prisma db push` has not been run against Neon yet.
+
+---
+
+## Phase 1 — Foundation
+
+- [ ] **Auth** — NextAuth v5 setup (sign in, sign up, session, middleware to protect routes)
+- [ ] **DB migration** — run `prisma db push` to create tables in Neon
+- [ ] **Server Actions: Ingredient** — create, read, update, delete, toggle favorite
+- [ ] **Server Actions: Food** — create, read, update, delete, toggle favorite
+- [ ] **Server Actions: Recipe** — create, read, update, delete, toggle favorite
+- [ ] **Server Actions: Meal** — log meal, list by date, delete
+- [ ] **Server Actions: Goal** — get/set goal for a date
+- [ ] **USDA lookup** — server action to query FoodData Central API by name
+
+## Phase 2 — Screens
+
+- [ ] **Main Screen** — date, cal/protein consumed vs goal, remaining, nav buttons
+- [ ] **Add Ingredient Screen** — form with USDA lookup, save/edit/delete/favorite
+- [ ] **Add Food Screen** — same pattern as ingredient + `items` measure unit
+- [ ] **Add Recipe Screen** — ingredient picker popup, servings, auto cal/protein calc
+- [ ] **Add Meal Screen** — food/recipe search, favorites first, servings multiplier, meal list
+- [ ] **Day Details Screen** — meals grouped by type in chrono order, tap to edit
+- [ ] **Library View** — browse/search/edit/delete all ingredients, foods, recipes
+
+## Phase 3 — Polish
+
+- [ ] Historical day navigation (tap date on Main Screen)
+- [ ] Goal editing inline on Main Screen
+- [ ] Meal type auto-default logic (1st=Breakfast, 2nd=Lunch, 3rd=Dinner, rest=Snack)
+- [ ] Density lookup table for volume↔weight conversions in recipes
+- [ ] Soft-delete protection for ingredients/foods used in recipes or logged meals
+
+---
+
+## Key Decisions
+
+- **Framework**: Next.js 15 App Router + React 19 + TypeScript
+- **Styling**: Tailwind CSS (mobile-first)
+- **ORM**: Prisma 6 with `POSTGRES_PRISMA_URL` (pooled) + `DATABASE_URL_UNPOOLED` (direct)
+- **Auth**: NextAuth v5 (beta) with Prisma adapter
+- **Nutrition lookup**: USDA FoodData Central API (key in env vars)
+- **Recipe nutrition**: best-effort unit conversion with density approximation table
+- **MealItem snapshots**: calories/protein are snapshotted at log time so editing a food later doesn't rewrite history
+- **Goals**: stored per user per date so historical days reflect the goal that was active then
+- **Favorites**: sort to top of food/recipe picker (alpha within group, separator, then rest alpha)
+- **Data privacy**: all data is private per user; nothing shared between accounts
+
+---
+
+## How to Resume in a New Session
+
+1. Read this file and `Meal_Tracker_Spec.md` for full context
+2. Check the unchecked boxes above to see what's next
+3. Run `vercel env pull .env.local` to get env vars locally if needed
+4. The next task is: **Auth setup** (NextAuth v5 + Prisma adapter + sign-in page + route middleware)
