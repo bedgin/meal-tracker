@@ -5,7 +5,7 @@ Update it as work is completed so any new session can pick up where we left off.
 
 ---
 
-## Status: Phase 2 — Screens (in progress — Day Details next)
+## Status: Phase 2 — Screens (in progress — Library View next)
 
 ---
 
@@ -63,7 +63,7 @@ Defined in `prisma/schema.prisma`. Tables:
 - [x] **Add Food Screen** — same as ingredient form but measure unit dropdown includes Items (for "1 banana", "24 chips", etc.); autocomplete, USDA lookup, favorite, two-tap delete, edit mode
 - [x] **Add Recipe Screen** — two-step ingredient picker modal (select → enter amount), live cal/protein estimate, servings 1–12, instructions, favorite toggle, two-tap delete, localStorage draft preserves state when navigating to add a new ingredient, edit mode
 - [x] **Add Meal Screen** — food/recipe picker (favorites first with separator), servings multiplier per row, live totals, meal type pills, two-tap delete in edit mode, server actions for log/update/delete
-- [ ] **Day Details Screen** — meals grouped by type in chrono order, tap to edit
+- [x] **Day Details Screen** — `/details?date=YYYY-MM-DD`, meals grouped by Breakfast/Lunch/Dinner/Snack, each card shows items with cal/protein, taps to edit, two-tap delete
 - [ ] **Library View** — browse/search/edit/delete all ingredients, foods, recipes
 
 ## Phase 3 — Polish
@@ -96,4 +96,4 @@ Defined in `prisma/schema.prisma`. Tables:
 1. Read this file and `Meal_Tracker_Spec.md` for full context
 2. Check the unchecked boxes above to see what's next
 3. Run `vercel env pull .env.local` to get env vars locally if needed
-4. The next task is: **Day Details Screen** — `/details?date=YYYY-MM-DD`, meals grouped by meal type in chrono order, tap a meal to edit, delete from here
+4. The next task is: **Library View** — `/library`, tabbed browse of ingredients/foods/recipes, search, tap to edit, swipe or two-tap delete
