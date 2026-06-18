@@ -5,7 +5,7 @@ Update it as work is completed so any new session can pick up where we left off.
 
 ---
 
-## Status: Phase 2 — Screens (in progress — Add Meal next)
+## Status: Phase 2 — Screens (in progress — Day Details next)
 
 ---
 
@@ -62,7 +62,7 @@ Defined in `prisma/schema.prisma`. Tables:
 - [x] **Add Ingredient Screen** — autocomplete from existing ingredients, USDA lookup, serving size (measurement + weight), calories/protein, favorite toggle, two-tap delete guard, edit mode with prefill (`/ingredient/[id]/edit`)
 - [x] **Add Food Screen** — same as ingredient form but measure unit dropdown includes Items (for "1 banana", "24 chips", etc.); autocomplete, USDA lookup, favorite, two-tap delete, edit mode
 - [x] **Add Recipe Screen** — two-step ingredient picker modal (select → enter amount), live cal/protein estimate, servings 1–12, instructions, favorite toggle, two-tap delete, localStorage draft preserves state when navigating to add a new ingredient, edit mode
-- [ ] **Add Meal Screen** — food/recipe search, favorites first, servings multiplier, meal list
+- [x] **Add Meal Screen** — food/recipe picker (favorites first with separator), servings multiplier per row, live totals, meal type pills, two-tap delete in edit mode, server actions for log/update/delete
 - [ ] **Day Details Screen** — meals grouped by type in chrono order, tap to edit
 - [ ] **Library View** — browse/search/edit/delete all ingredients, foods, recipes
 
@@ -96,4 +96,4 @@ Defined in `prisma/schema.prisma`. Tables:
 1. Read this file and `Meal_Tracker_Spec.md` for full context
 2. Check the unchecked boxes above to see what's next
 3. Run `vercel env pull .env.local` to get env vars locally if needed
-4. The next task is: **Add Meal Screen** — food/recipe search with favorites first, servings multiplier, meal type auto-default, date/time picker
+4. The next task is: **Day Details Screen** — `/details?date=YYYY-MM-DD`, meals grouped by meal type in chrono order, tap a meal to edit, delete from here
