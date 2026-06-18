@@ -149,7 +149,10 @@ export async function getMeal(id: string) {
     where: { id, userId },
     include: {
       mealItems: {
-        include: { food: true, recipe: true },
+        include: {
+          food: true,
+          recipe: { include: { ingredients: true } },
+        },
       },
     },
   });
