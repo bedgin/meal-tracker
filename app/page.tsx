@@ -158,11 +158,18 @@ export default async function HomePage({
 
       {/* Action buttons */}
       <div className="px-4 pb-10 space-y-3">
-        <Link href={`/details?date=${date}`} className="block">
-          <button className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 font-medium text-sm bg-white hover:bg-gray-50 active:bg-gray-100">
-            See Details
-          </button>
-        </Link>
+        <div className="grid grid-cols-2 gap-2">
+          <Link href={`/details?date=${date}`} className="block">
+            <button className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 font-medium text-sm bg-white hover:bg-gray-50 active:bg-gray-100">
+              See Details
+            </button>
+          </Link>
+          <Link href="/library" className="block">
+            <button className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 font-medium text-sm bg-white hover:bg-gray-50 active:bg-gray-100">
+              Library
+            </button>
+          </Link>
+        </div>
 
         <Link href={`/meal/new?date=${date}`} className="block">
           <button className="w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-xl shadow-sm hover:bg-blue-700 active:bg-blue-800">
