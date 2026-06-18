@@ -5,7 +5,7 @@ Update it as work is completed so any new session can pick up where we left off.
 
 ---
 
-## Status: Phase 2 — Screens (in progress — Library View next)
+## Status: Phase 2 — Screens (complete — Phase 3 polish next)
 
 ---
 
@@ -64,7 +64,7 @@ Defined in `prisma/schema.prisma`. Tables:
 - [x] **Add Recipe Screen** — two-step ingredient picker modal (select → enter amount), live cal/protein estimate, servings 1–12, instructions, favorite toggle, two-tap delete, localStorage draft preserves state when navigating to add a new ingredient, edit mode
 - [x] **Add Meal Screen** — food/recipe picker (favorites first with separator), servings multiplier per row, live totals, meal type pills, two-tap delete in edit mode, server actions for log/update/delete
 - [x] **Day Details Screen** — `/details?date=YYYY-MM-DD`, meals grouped by Breakfast/Lunch/Dinner/Snack, each card shows items with cal/protein, taps to edit, two-tap delete
-- [ ] **Library View** — browse/search/edit/delete all ingredients, foods, recipes
+- [x] **Library View** — `/library`, tabbed Ingredients/Foods/Recipes with counts, search, star toggle, tap to edit, two-tap delete with error banner for protected items
 
 ## Phase 3 — Polish
 
@@ -96,4 +96,4 @@ Defined in `prisma/schema.prisma`. Tables:
 1. Read this file and `Meal_Tracker_Spec.md` for full context
 2. Check the unchecked boxes above to see what's next
 3. Run `vercel env pull .env.local` to get env vars locally if needed
-4. The next task is: **Library View** — `/library`, tabbed browse of ingredients/foods/recipes, search, tap to edit, swipe or two-tap delete
+4. All Phase 2 screens are complete. The next task is Phase 3 polish — see the Phase 3 section below.
