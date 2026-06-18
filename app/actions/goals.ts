@@ -34,6 +34,30 @@ export async function setGoalForDate(
   return goal;
 }
 
+/** Update only the calorie goal, preserving the existing protein goal. */
+export async function setCalorieGoal(date: string, calorieGoal: number | null) {
+  const userId = await requireUserId();
+  const goal = await prisma.goal.upsert({
+    where: { userId_date: { userId, date: new Date(date) } },
+    update: { calorieGoal },
+    create: { userId, date: new Date(date), calorieGoal, proteinGoal: null },
+  });
+  revalidatePath("/");
+  return goal;
+}
+
+/** Update only the protein goal, preserving the existing calorie goal. */
+export async function setProteinGoal(date: string, proteinGoal: number | null) {
+  const userId = await requireUserId();
+  const goal = await prisma.goal.upsert({
+    where: { userId_date: { userId, date: new Date(date) } },
+    update: { proteinGoal },
+    create: { userId, date: new Date(date), calorieGoal: null, proteinGoal },
+  });
+  revalidatePath("/");
+  return goal;
+}
+
 /**
  * Gets the most recent goal on or before the given date.
  * Used to carry forward a goal when none is explicitly set for a day.
