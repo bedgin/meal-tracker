@@ -23,6 +23,7 @@ export type RecipeInput = {
   name: string;
   servings: number;
   instructions?: string | null;
+  isFavorite?: boolean;
   ingredients: RecipeIngredientInput[];
 };
 
@@ -57,6 +58,7 @@ export async function createRecipe(data: RecipeInput) {
       name: data.name,
       servings: data.servings,
       instructions: data.instructions ?? null,
+      isFavorite: data.isFavorite ?? false,
       userId,
       ingredients: {
         create: data.ingredients.map((ing) => ({
@@ -91,6 +93,7 @@ export async function updateRecipe(id: string, data: RecipeInput) {
       name: data.name,
       servings: data.servings,
       instructions: data.instructions ?? null,
+      isFavorite: data.isFavorite ?? false,
       ingredients: {
         create: data.ingredients.map((ing) => ({
           ingredientId: ing.ingredientId,
