@@ -18,6 +18,7 @@ export type IngredientInput = {
   servingWeightUnit?: string | null;
   caloriesPerServing: number;
   proteinPerServing: number;
+  isFavorite?: boolean;
 };
 
 export async function getIngredients() {
