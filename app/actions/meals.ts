@@ -143,6 +143,18 @@ export async function deleteMeal(id: string) {
   revalidatePath("/");
 }
 
+export async function getMeal(id: string) {
+  const userId = await requireUserId();
+  return prisma.meal.findFirst({
+    where: { id, userId },
+    include: {
+      mealItems: {
+        include: { food: true, recipe: true },
+      },
+    },
+  });
+}
+
 export async function getMealsByDate(date: string) {
   const userId = await requireUserId();
   const start = new Date(date);

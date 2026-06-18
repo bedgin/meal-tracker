@@ -1,0 +1,589 @@
+"use client";
+
+import { useState, useMemo, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import type { Food, Recipe, Meal, MealItem } from "@prisma/client";
+import { logMeal, updateMeal, deleteMeal } from "@/app/actions/meals";
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type FullMeal = Meal & {
+  mealItems: (MealItem & { food: Food | null; recipe: (Recipe & { ingredients: unknown[] }) | null })[];
+};
+
+type FoodOrRecipe =
+  | { kind: "food"; item: Food }
+  | { kind: "recipe"; item: Recipe };
+
+type MealRow = {
+  tempId: string;
+  kind: "food" | "recipe";
+  itemId: string;
+  name: string;
+  caloriesPerServing: number;
+  proteinPerServing: number;
+  servingsMultiplier: number;
+};
+
+type Props = {
+  meal?: FullMeal;
+  foods: Food[];
+  recipes: Recipe[];
+  defaultDate: string;
+  defaultTime: string;
+  defaultMealType: "Breakfast" | "Lunch" | "Dinner" | "Snack";
+  returnTo: string;
+};
+
+const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"] as const;
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function getRecipeCalories(recipe: Recipe): number {
+  // caloriesPerServing isn't stored on Recipe directly — we snapshot on log.
+  // For display in the picker, show 0 (unknown until logged). Server snapshots on save.
+  return (recipe as Recipe & { _cal?: number })._cal ?? 0;
+}
+
+function buildCatalog(foods: Food[], recipes: Recipe[]): FoodOrRecipe[] {
+  const favFoods: FoodOrRecipe[] = foods
+    .filter((f) => f.isFavorite)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((f) => ({ kind: "food", item: f }));
+
+  const favRecipes: FoodOrRecipe[] = recipes
+    .filter((r) => r.isFavorite)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((r) => ({ kind: "recipe", item: r }));
+
+  const restFoods: FoodOrRecipe[] = foods
+    .filter((f) => !f.isFavorite)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((f) => ({ kind: "food", item: f }));
+
+  const restRecipes: FoodOrRecipe[] = recipes
+    .filter((r) => !r.isFavorite)
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map((r) => ({ kind: "recipe", item: r }));
+
+  return [...favFoods, ...favRecipes, ...restFoods, ...restRecipes];
+}
+
+function calPerServing(entry: FoodOrRecipe): number {
+  return entry.kind === "food" ? entry.item.caloriesPerServing : 0;
+}
+
+function proteinPerServing(entry: FoodOrRecipe): number {
+  return entry.kind === "food" ? entry.item.proteinPerServing : 0;
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
+
+export default function MealForm({
+  meal,
+  foods,
+  recipes,
+  defaultDate,
+  defaultTime,
+  defaultMealType,
+  returnTo,
+}: Props) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const isEditing = !!meal;
+
+  // ─── Form state ────────────────────────────────────────────────────────────
+
+  const [date, setDate] = useState(defaultDate);
+  const [time, setTime] = useState(defaultTime);
+  const [mealType, setMealType] = useState(defaultMealType);
+
+  // Meal rows — initialise from existing meal if editing
+  const [rows, setRows] = useState<MealRow[]>(() => {
+    if (!meal) return [];
+    return meal.mealItems.map((mi) => {
+      const name = mi.food?.name ?? mi.recipe?.name ?? "Unknown";
+      return {
+        tempId: mi.id,
+        kind: mi.itemType as "food" | "recipe",
+        itemId: mi.foodId ?? mi.recipeId ?? "",
+        name,
+        caloriesPerServing: mi.caloriesSnapshot / mi.servingsMultiplier,
+        proteinPerServing: mi.proteinSnapshot / mi.servingsMultiplier,
+        servingsMultiplier: mi.servingsMultiplier,
+      };
+    });
+  });
+
+  // ─── Picker state ──────────────────────────────────────────────────────────
+
+  const [showPicker, setShowPicker] = useState(false);
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<FoodOrRecipe | null>(null);
+  const [multiplier, setMultiplier] = useState("1");
+
+  // ─── UI state ──────────────────────────────────────────────────────────────
+
+  const [error, setError] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+
+  // ─── Catalog ───────────────────────────────────────────────────────────────
+
+  const catalog = useMemo(() => buildCatalog(foods, recipes), [foods, recipes]);
+  const hasFavorites = catalog.some(
+    (e) => (e.kind === "food" ? e.item.isFavorite : e.item.isFavorite)
+  );
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase().trim();
+    return q
+      ? catalog.filter((e) => e.item.name.toLowerCase().includes(q))
+      : catalog;
+  }, [search, catalog]);
+
+  // Which filtered entries are favorites (only matters when not searching)
+  const filteredFavCount = useMemo(
+    () =>
+      search
+        ? 0
+        : filtered.filter((e) =>
+            e.kind === "food" ? e.item.isFavorite : e.item.isFavorite
+          ).length,
+    [search, filtered]
+  );
+
+  // ─── Totals ────────────────────────────────────────────────────────────────
+
+  const totals = useMemo(() => {
+    return rows.reduce(
+      (acc, r) => ({
+        cal: acc.cal + r.caloriesPerServing * r.servingsMultiplier,
+        protein: acc.protein + r.proteinPerServing * r.servingsMultiplier,
+      }),
+      { cal: 0, protein: 0 }
+    );
+  }, [rows]);
+
+  // ─── Picker actions ────────────────────────────────────────────────────────
+
+  function openPicker() {
+    setSearch("");
+    setSelected(null);
+    setMultiplier("1");
+    setShowPicker(true);
+  }
+
+  function closePicker() {
+    setShowPicker(false);
+    setSelected(null);
+  }
+
+  function handleSelect(entry: FoodOrRecipe) {
+    setSelected(entry);
+    setMultiplier("1");
+  }
+
+  function handleAddToMeal() {
+    if (!selected) return;
+    const mult = parseFloat(multiplier) || 1;
+    setRows((prev) => [
+      ...prev,
+      {
+        tempId: Math.random().toString(36).slice(2),
+        kind: selected.kind,
+        itemId: selected.item.id,
+        name: selected.item.name,
+        caloriesPerServing: calPerServing(selected),
+        proteinPerServing: proteinPerServing(selected),
+        servingsMultiplier: mult,
+      },
+    ]);
+    // Stay in picker to add more
+    setSelected(null);
+    setMultiplier("1");
+    setSearch("");
+  }
+
+  function updateMultiplier(tempId: string, value: string) {
+    setRows((prev) =>
+      prev.map((r) =>
+        r.tempId === tempId
+          ? { ...r, servingsMultiplier: parseFloat(value) || 1 }
+          : r
+      )
+    );
+  }
+
+  function removeRow(tempId: string) {
+    setRows((prev) => prev.filter((r) => r.tempId !== tempId));
+  }
+
+  // ─── Save / Delete ─────────────────────────────────────────────────────────
+
+  function handleSave() {
+    if (rows.length === 0) {
+      setError("Add at least one food or recipe.");
+      return;
+    }
+    setError(null);
+
+    startTransition(async () => {
+      const timeIso = new Date(`${date}T${time}:00`).toISOString();
+      const data = {
+        date,
+        time: timeIso,
+        mealType: mealType as "Breakfast" | "Lunch" | "Dinner" | "Snack",
+        items: rows.map((r) => ({
+          itemType: r.kind,
+          foodId: r.kind === "food" ? r.itemId : undefined,
+          recipeId: r.kind === "recipe" ? r.itemId : undefined,
+          servingsMultiplier: r.servingsMultiplier,
+        })),
+      };
+
+      if (isEditing) {
+        await updateMeal(meal.id, data);
+      } else {
+        await logMeal(data);
+      }
+      router.push(returnTo);
+    });
+  }
+
+  function handleDelete() {
+    if (!deleteConfirm) { setDeleteConfirm(true); return; }
+    startTransition(async () => {
+      await deleteMeal(meal!.id);
+      router.push(returnTo);
+    });
+  }
+
+  // ─── Render ────────────────────────────────────────────────────────────────
+
+  return (
+    <>
+      <main className="min-h-screen bg-gray-50 max-w-lg mx-auto flex flex-col">
+        {/* Header */}
+        <header className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
+          <Link href={returnTo} className="text-blue-600 font-medium text-sm shrink-0">
+            ← Back
+          </Link>
+          <h1 className="text-base font-semibold text-gray-900 flex-1">
+            {isEditing ? "Edit Meal" : "Add Meal"}
+          </h1>
+        </header>
+
+        <div className="flex-1 px-4 py-5 space-y-5 pb-4">
+          {/* Date + Time + Meal Type */}
+          <div className="bg-white rounded-2xl border border-gray-200 divide-y divide-gray-100 overflow-hidden">
+            <div className="flex items-center px-4 py-3 gap-3">
+              <span className="text-sm font-medium text-gray-500 w-20 shrink-0">Date</span>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="flex-1 text-sm font-medium text-gray-900 bg-transparent focus:outline-none"
+              />
+            </div>
+            <div className="flex items-center px-4 py-3 gap-3">
+              <span className="text-sm font-medium text-gray-500 w-20 shrink-0">Time</span>
+              <input
+                type="time"
+                value={time}
+                onChange={(e) => setTime(e.target.value)}
+                className="flex-1 text-sm font-medium text-gray-900 bg-transparent focus:outline-none"
+              />
+            </div>
+            <div className="flex items-center px-4 py-3 gap-3">
+              <span className="text-sm font-medium text-gray-500 w-20 shrink-0">Type</span>
+              <div className="flex gap-2 flex-wrap">
+                {MEAL_TYPES.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => setMealType(t)}
+                    className={`px-3 py-1 rounded-full text-sm font-medium border transition-colors ${
+                      mealType === t
+                        ? "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-gray-600 border-gray-200 hover:border-blue-300"
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Meal items */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Items
+              </label>
+              <button
+                onClick={openPicker}
+                className="text-sm font-medium text-blue-600 hover:text-blue-800"
+              >
+                + Find Food / Recipe
+              </button>
+            </div>
+
+            {rows.length === 0 ? (
+              <div className="text-sm text-gray-400 text-center py-8 bg-white rounded-xl border border-dashed border-gray-200">
+                No items yet — tap + Find Food / Recipe
+              </div>
+            ) : (
+              <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100 overflow-hidden">
+                {rows.map((row) => (
+                  <div key={row.tempId} className="px-4 py-3">
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {row.name}
+                          {row.kind === "recipe" && (
+                            <span className="ml-1.5 text-xs text-purple-500 font-normal">recipe</span>
+                          )}
+                        </p>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {Math.round(row.caloriesPerServing * row.servingsMultiplier)} cal
+                          · {Math.round(row.proteinPerServing * row.servingsMultiplier)}g protein
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => removeRow(row.tempId)}
+                        className="text-gray-300 hover:text-red-400 text-xl leading-none shrink-0 px-1 mt-0.5"
+                        aria-label="Remove"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                    {/* Servings multiplier */}
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-xs text-gray-400">Servings:</span>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        step="0.5"
+                        min="0.1"
+                        value={row.servingsMultiplier}
+                        onChange={(e) => updateMultiplier(row.tempId, e.target.value)}
+                        className="w-16 px-2 py-1 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Running totals */}
+          {rows.length > 0 && (
+            <div className="bg-blue-50 rounded-xl px-4 py-3 flex gap-8">
+              <div>
+                <p className="text-xs font-semibold text-blue-400 uppercase tracking-wide">Total Cal</p>
+                <p className="text-2xl font-bold text-blue-700 tabular-nums">
+                  {Math.round(totals.cal)}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-blue-400 uppercase tracking-wide">Total Protein</p>
+                <p className="text-2xl font-bold text-blue-700 tabular-nums">
+                  {Math.round(totals.protein)}
+                  <span className="text-base font-medium">g</span>
+                </p>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="px-4 pb-10 pt-2 space-y-3">
+          <button
+            onClick={handleSave}
+            disabled={isPending}
+            className="w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-lg shadow-sm hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60"
+          >
+            {isPending
+              ? "Saving…"
+              : isEditing
+                ? "Save Changes"
+                : "Finish Adding Meal"}
+          </button>
+
+          {isEditing && (
+            <button
+              onClick={handleDelete}
+              disabled={isPending}
+              className={`w-full py-3 rounded-xl font-medium text-sm border transition-colors ${
+                deleteConfirm
+                  ? "bg-red-600 text-white border-red-600"
+                  : "border-red-200 text-red-500 bg-white hover:bg-red-50"
+              }`}
+            >
+              {deleteConfirm ? "Tap again to confirm delete" : "Delete Meal"}
+            </button>
+          )}
+        </div>
+      </main>
+
+      {/* ─── Food / Recipe Picker Modal ─── */}
+      {showPicker && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col justify-end bg-black/40"
+          onClick={(e) => { if (e.target === e.currentTarget) closePicker(); }}
+        >
+          <div className="bg-white rounded-t-2xl flex flex-col max-h-[90vh] max-w-lg mx-auto w-full">
+            {/* Modal header */}
+            <div className="px-4 py-3 flex items-center justify-between border-b border-gray-100 shrink-0">
+              <h2 className="font-semibold text-gray-900 text-base">Find Food or Recipe</h2>
+              <button
+                onClick={closePicker}
+                className="text-gray-400 hover:text-gray-600 text-xl leading-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Search */}
+            <div className="px-4 py-3 border-b border-gray-100 shrink-0">
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search foods and recipes…"
+                autoFocus
+                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              />
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto">
+              {filtered.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-10">No results.</p>
+              ) : (
+                filtered.map((entry, idx) => {
+                  const isSelected =
+                    selected?.kind === entry.kind &&
+                    selected?.item.id === entry.item.id;
+                  const isFav =
+                    entry.kind === "food"
+                      ? entry.item.isFavorite
+                      : entry.item.isFavorite;
+
+                  // Show separator between favorites and the rest (only when not searching)
+                  const showSeparator =
+                    !search &&
+                    hasFavorites &&
+                    filteredFavCount > 0 &&
+                    idx === filteredFavCount;
+
+                  return (
+                    <div key={`${entry.kind}-${entry.item.id}`}>
+                      {showSeparator && (
+                        <div className="flex items-center gap-2 px-4 py-1.5 bg-gray-50">
+                          <div className="flex-1 h-px bg-gray-200" />
+                          <span className="text-xs text-gray-400 font-medium">All items</span>
+                          <div className="flex-1 h-px bg-gray-200" />
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleSelect(entry)}
+                        className={`w-full text-left px-4 py-3 border-b border-gray-100 last:border-0 transition-colors ${
+                          isSelected
+                            ? "bg-blue-50"
+                            : "hover:bg-gray-50 active:bg-gray-100"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-900 flex-1 truncate">
+                            {entry.item.name}
+                          </span>
+                          {isFav && (
+                            <span className="text-yellow-400 text-xs">★</span>
+                          )}
+                          {entry.kind === "recipe" && (
+                            <span className="text-xs text-purple-400 font-medium">recipe</span>
+                          )}
+                        </div>
+                        <span className="text-xs text-gray-400 mt-0.5 block">
+                          {entry.kind === "food"
+                            ? `${entry.item.caloriesPerServing} cal · ${entry.item.proteinPerServing}g protein / serving`
+                            : "Cal & protein calculated on log"}
+                        </span>
+                      </button>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Add to meal panel — shown when something is selected */}
+            {selected && (
+              <div className="border-t border-gray-100 px-4 py-4 space-y-3 shrink-0 bg-white">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-gray-800 truncate flex-1 mr-2">
+                    {selected.item.name}
+                  </p>
+                  <button
+                    onClick={() => setSelected(null)}
+                    className="text-gray-300 hover:text-gray-500 text-lg leading-none"
+                  >
+                    ✕
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <label className="text-sm text-gray-500 shrink-0">Servings:</label>
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.5"
+                    min="0.1"
+                    value={multiplier}
+                    onChange={(e) => setMultiplier(e.target.value)}
+                    className="w-20 px-3 py-2 border border-gray-300 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  {selected.kind === "food" && (
+                    <span className="text-xs text-gray-400">
+                      ≈ {Math.round(selected.item.caloriesPerServing * (parseFloat(multiplier) || 1))} cal
+                      · {Math.round(selected.item.proteinPerServing * (parseFloat(multiplier) || 1))}g
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={handleAddToMeal}
+                  className="w-full py-3 rounded-xl bg-blue-600 text-white font-semibold text-base hover:bg-blue-700"
+                >
+                  Add to Meal
+                </button>
+              </div>
+            )}
+
+            {/* Quick links */}
+            <div className="px-4 py-3 border-t border-gray-100 shrink-0 flex gap-3">
+              <Link
+                href={`/food/new?returnTo=/meal/new`}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-500 font-medium text-sm text-center hover:bg-gray-50"
+                onClick={closePicker}
+              >
+                + New Food
+              </Link>
+              <Link
+                href={`/recipe/new?returnTo=/meal/new`}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-500 font-medium text-sm text-center hover:bg-gray-50"
+                onClick={closePicker}
+              >
+                + New Recipe
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
