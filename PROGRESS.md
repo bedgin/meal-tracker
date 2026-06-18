@@ -5,7 +5,7 @@ Update it as work is completed so any new session can pick up where we left off.
 
 ---
 
-## Status: Phase 1 — Foundation (in progress)
+## Status: Phase 1 — Foundation (in progress — Auth done, Server Actions next)
 
 ---
 
@@ -47,8 +47,8 @@ Defined in `prisma/schema.prisma`. Tables:
 
 ## Phase 1 — Foundation
 
-- [ ] **Auth** — NextAuth v5 setup (sign in, sign up, session, middleware to protect routes)
-- [ ] **DB migration** — run `prisma db push` to create tables in Neon
+- [x] **Auth** — NextAuth v5 setup (sign in, sign up, session, middleware to protect routes)
+- [x] **DB migration** — `prisma db push` run; all tables created in Neon
 - [ ] **Server Actions: Ingredient** — create, read, update, delete, toggle favorite
 - [ ] **Server Actions: Food** — create, read, update, delete, toggle favorite
 - [ ] **Server Actions: Recipe** — create, read, update, delete, toggle favorite
@@ -96,4 +96,4 @@ Defined in `prisma/schema.prisma`. Tables:
 1. Read this file and `Meal_Tracker_Spec.md` for full context
 2. Check the unchecked boxes above to see what's next
 3. Run `vercel env pull .env.local` to get env vars locally if needed
-4. The next task is: **Auth setup** (NextAuth v5 + Prisma adapter + sign-in page + route middleware)
+4. The next task is: **Server Actions** — start with Ingredient (create, read, update, delete, favorite), then Food, Recipe, Meal, Goal, USDA lookup
