@@ -5,7 +5,7 @@ Update it as work is completed so any new session can pick up where we left off.
 
 ---
 
-## Status: Phase 1 — Foundation (in progress — Auth done, Server Actions next)
+## Status: Phase 1 — Foundation (complete) → Phase 2 — Screens (next)
 
 ---
 
@@ -49,12 +49,12 @@ Defined in `prisma/schema.prisma`. Tables:
 
 - [x] **Auth** — NextAuth v5 setup (sign in, sign up, session, middleware to protect routes)
 - [x] **DB migration** — `prisma db push` run; all tables created in Neon
-- [ ] **Server Actions: Ingredient** — create, read, update, delete, toggle favorite
-- [ ] **Server Actions: Food** — create, read, update, delete, toggle favorite
-- [ ] **Server Actions: Recipe** — create, read, update, delete, toggle favorite
-- [ ] **Server Actions: Meal** — log meal, list by date, delete
-- [ ] **Server Actions: Goal** — get/set goal for a date
-- [ ] **USDA lookup** — server action to query FoodData Central API by name
+- [x] **Server Actions: Ingredient** — create, read, update, delete, toggle favorite
+- [x] **Server Actions: Food** — create, read, update, delete, toggle favorite
+- [x] **Server Actions: Recipe** — create, read, update, delete, toggle favorite; nutrition calc via `lib/nutrition.ts`
+- [x] **Server Actions: Meal** — log meal (with calorie/protein snapshot), list by date, daily totals, delete
+- [x] **Server Actions: Goal** — get/set/effective goal for a date (upsert)
+- [x] **USDA lookup** — searches FoodData Central; returns per-100g and per-serving values
 
 ## Phase 2 — Screens
 
@@ -96,4 +96,4 @@ Defined in `prisma/schema.prisma`. Tables:
 1. Read this file and `Meal_Tracker_Spec.md` for full context
 2. Check the unchecked boxes above to see what's next
 3. Run `vercel env pull .env.local` to get env vars locally if needed
-4. The next task is: **Server Actions** — start with Ingredient (create, read, update, delete, favorite), then Food, Recipe, Meal, Goal, USDA lookup
+4. The next task is: **Main Screen** — date display, cal/protein consumed vs goal, remaining, nav buttons to Add Meal / Add Recipe / Add Food / Add Ingredient / Day Details
