@@ -624,6 +624,7 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
                         <option value="cups">Cups</option>
                         <option value="tbsp">Tablespoons</option>
                         <option value="tsp">Teaspoons</option>
+                        <option value="scoop">Scoops</option>
                       </select>
                     </div>
                   </div>
