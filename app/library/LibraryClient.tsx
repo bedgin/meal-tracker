@@ -116,7 +116,7 @@ export default function LibraryClient({
   recipes: FullRecipe[];
 }) {
   const router = useRouter();
-  const [tab, setTab] = useState<Tab>("ingredients");
+  const [tab, setTab] = useState<Tab>("recipes");
   const [search, setSearch] = useState("");
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [, startTransition] = useTransition();
@@ -147,9 +147,9 @@ export default function LibraryClient({
   );
 
   const tabs: { key: Tab; label: string; count: number }[] = [
-    { key: "ingredients", label: "Ingredients", count: ingredients.length },
-    { key: "foods", label: "Foods", count: foods.length },
     { key: "recipes", label: "Recipes", count: recipes.length },
+    { key: "foods", label: "Foods", count: foods.length },
+    { key: "ingredients", label: "Ingredients", count: ingredients.length },
   ];
 
   return (
