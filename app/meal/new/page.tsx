@@ -16,14 +16,6 @@ function defaultMealType(count: number): "Breakfast" | "Lunch" | "Dinner" | "Sna
   return "Snack";
 }
 
-function roundedTime(): string {
-  const now = new Date();
-  const ms = now.getTime();
-  const quarter = 15 * 60 * 1000;
-  const rounded = new Date(Math.floor(ms / quarter) * quarter);
-  return rounded.toTimeString().slice(0, 5); // "HH:MM"
-}
-
 export default async function NewMealPage({
   searchParams,
 }: {
@@ -46,7 +38,6 @@ export default async function NewMealPage({
       foods={foods}
       recipes={recipes}
       defaultDate={date}
-      defaultTime={roundedTime()}
       defaultMealType={defaultMealType(mealCount)}
       returnTo={returnTo || "/"}
     />

@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, useMemo, useTransition } from "react";
+import { useState, useMemo, useTransition, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { Food, Recipe, Meal, MealItem } from "@prisma/client";
+import type { Food, Recipe, Meal, MealItem, Ingredient, RecipeIngredient } from "@prisma/client";
+import { calcRecipeNutrition } from "@/lib/nutrition";
 import { logMeal, updateMeal, deleteMeal } from "@/app/actions/meals";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+
+type RecipeWithIngredients = Recipe & {
+  ingredients: (RecipeIngredient & { ingredient: Ingredient })[];
+};
 
 type FullMeal = Meal & {
   mealItems: (MealItem & { food: Food | null; recipe: (Recipe & { ingredients: unknown[] }) | null })[];
@@ -14,7 +19,7 @@ type FullMeal = Meal & {
 
 type FoodOrRecipe =
   | { kind: "food"; item: Food }
-  | { kind: "recipe"; item: Recipe };
+  | { kind: "recipe"; item: RecipeWithIngredients };
 
 type MealRow = {
   tempId: string;
@@ -29,24 +34,62 @@ type MealRow = {
 type Props = {
   meal?: FullMeal;
   foods: Food[];
-  recipes: Recipe[];
+  recipes: RecipeWithIngredients[];
   defaultDate: string;
-  defaultTime: string;
+  defaultTime?: string; // omit on new meal — computed client-side
   defaultMealType: "Breakfast" | "Lunch" | "Dinner" | "Snack";
   returnTo: string;
 };
 
 const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"] as const;
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Draft (persists meal state when navigating away to add a new food/recipe)
 
-function getRecipeCalories(recipe: Recipe): number {
-  // caloriesPerServing isn't stored on Recipe directly — we snapshot on log.
-  // For display in the picker, show 0 (unknown until logged). Server snapshots on save.
-  return (recipe as Recipe & { _cal?: number })._cal ?? 0;
+const DRAFT_KEY = "meal-new-draft";
+
+type DraftRow = {
+  kind: "food" | "recipe";
+  itemId: string;
+  name: string;
+  caloriesPerServing: number;
+  proteinPerServing: number;
+  servingsMultiplier: number;
+};
+
+type Draft = {
+  date: string;
+  time: string;
+  mealType: "Breakfast" | "Lunch" | "Dinner" | "Snack";
+  rows: DraftRow[];
+};
+
+function saveDraft(d: Draft) {
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)); } catch {}
 }
 
-function buildCatalog(foods: Food[], recipes: Recipe[]): FoodOrRecipe[] {
+function popDraft(): Draft | null {
+  try {
+    const raw = localStorage.getItem(DRAFT_KEY);
+    if (!raw) return null;
+    localStorage.removeItem(DRAFT_KEY);
+    return JSON.parse(raw);
+  } catch { return null; }
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function currentQuarterHour(): string {
+  const now = new Date();
+  const h = now.getHours();
+  const m = Math.floor(now.getMinutes() / 15) * 15;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+function recipeNutrition(recipe: RecipeWithIngredients) {
+  return calcRecipeNutrition(recipe.ingredients, recipe.servings);
+}
+
+function buildCatalog(foods: Food[], recipes: RecipeWithIngredients[]): FoodOrRecipe[] {
   const favFoods: FoodOrRecipe[] = foods
     .filter((f) => f.isFavorite)
     .sort((a, b) => a.name.localeCompare(b.name))
@@ -71,11 +114,13 @@ function buildCatalog(foods: Food[], recipes: Recipe[]): FoodOrRecipe[] {
 }
 
 function calPerServing(entry: FoodOrRecipe): number {
-  return entry.kind === "food" ? entry.item.caloriesPerServing : 0;
+  if (entry.kind === "food") return entry.item.caloriesPerServing;
+  return recipeNutrition(entry.item).caloriesPerServing;
 }
 
 function proteinPerServing(entry: FoodOrRecipe): number {
-  return entry.kind === "food" ? entry.item.proteinPerServing : 0;
+  if (entry.kind === "food") return entry.item.proteinPerServing;
+  return recipeNutrition(entry.item).proteinPerServing;
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
@@ -96,7 +141,8 @@ export default function MealForm({
   // ─── Form state ────────────────────────────────────────────────────────────
 
   const [date, setDate] = useState(defaultDate);
-  const [time, setTime] = useState(defaultTime);
+  // Compute quarter-hour client-side when no defaultTime provided (new meal)
+  const [time, setTime] = useState(() => defaultTime ?? currentQuarterHour());
   const [mealType, setMealType] = useState(defaultMealType);
 
   // Meal rows — initialise from existing meal if editing
@@ -116,6 +162,27 @@ export default function MealForm({
     });
   });
 
+  // Restore draft on mount (new meal only)
+  useEffect(() => {
+    if (isEditing) return;
+    const draft = popDraft();
+    if (!draft) return;
+    setDate(draft.date);
+    setTime(draft.time);
+    setMealType(draft.mealType);
+    setRows(
+      draft.rows.map((r) => ({
+        tempId: Math.random().toString(36).slice(2),
+        kind: r.kind,
+        itemId: r.itemId,
+        name: r.name,
+        caloriesPerServing: r.caloriesPerServing,
+        proteinPerServing: r.proteinPerServing,
+        servingsMultiplier: r.servingsMultiplier,
+      }))
+    );
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ─── Picker state ──────────────────────────────────────────────────────────
 
   const [showPicker, setShowPicker] = useState(false);
@@ -131,9 +198,7 @@ export default function MealForm({
   // ─── Catalog ───────────────────────────────────────────────────────────────
 
   const catalog = useMemo(() => buildCatalog(foods, recipes), [foods, recipes]);
-  const hasFavorites = catalog.some(
-    (e) => (e.kind === "food" ? e.item.isFavorite : e.item.isFavorite)
-  );
+  const hasFavorites = catalog.some((e) => e.item.isFavorite);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
@@ -142,14 +207,11 @@ export default function MealForm({
       : catalog;
   }, [search, catalog]);
 
-  // Which filtered entries are favorites (only matters when not searching)
   const filteredFavCount = useMemo(
     () =>
       search
         ? 0
-        : filtered.filter((e) =>
-            e.kind === "food" ? e.item.isFavorite : e.item.isFavorite
-          ).length,
+        : filtered.filter((e) => e.item.isFavorite).length,
     [search, filtered]
   );
 
@@ -199,7 +261,6 @@ export default function MealForm({
         servingsMultiplier: mult,
       },
     ]);
-    // Stay in picker to add more
     setSelected(null);
     setMultiplier("1");
     setSearch("");
@@ -217,6 +278,25 @@ export default function MealForm({
 
   function removeRow(tempId: string) {
     setRows((prev) => prev.filter((r) => r.tempId !== tempId));
+  }
+
+  // Save draft and navigate to a new food/recipe page
+  function navigateWithDraft(href: string) {
+    saveDraft({
+      date,
+      time,
+      mealType,
+      rows: rows.map((r) => ({
+        kind: r.kind,
+        itemId: r.itemId,
+        name: r.name,
+        caloriesPerServing: r.caloriesPerServing,
+        proteinPerServing: r.proteinPerServing,
+        servingsMultiplier: r.servingsMultiplier,
+      })),
+    });
+    closePicker();
+    router.push(href);
   }
 
   // ─── Save / Delete ─────────────────────────────────────────────────────────
@@ -245,6 +325,7 @@ export default function MealForm({
       if (isEditing) {
         await updateMeal(meal.id, data);
       } else {
+        try { localStorage.removeItem(DRAFT_KEY); } catch {}
         await logMeal(data);
       }
       router.push(returnTo);
@@ -260,6 +341,8 @@ export default function MealForm({
   }
 
   // ─── Render ────────────────────────────────────────────────────────────────
+
+  const returnToEncoded = encodeURIComponent(`/meal/new?date=${date}&returnTo=${encodeURIComponent(returnTo)}`);
 
   return (
     <>
@@ -470,17 +553,15 @@ export default function MealForm({
                   const isSelected =
                     selected?.kind === entry.kind &&
                     selected?.item.id === entry.item.id;
-                  const isFav =
-                    entry.kind === "food"
-                      ? entry.item.isFavorite
-                      : entry.item.isFavorite;
 
-                  // Show separator between favorites and the rest (only when not searching)
                   const showSeparator =
                     !search &&
                     hasFavorites &&
                     filteredFavCount > 0 &&
                     idx === filteredFavCount;
+
+                  const entryCalPerServing = calPerServing(entry);
+                  const entryProteinPerServing = proteinPerServing(entry);
 
                   return (
                     <div key={`${entry.kind}-${entry.item.id}`}>
@@ -504,7 +585,7 @@ export default function MealForm({
                           <span className="text-sm font-medium text-gray-900 flex-1 truncate">
                             {entry.item.name}
                           </span>
-                          {isFav && (
+                          {entry.item.isFavorite && (
                             <span className="text-yellow-400 text-xs">★</span>
                           )}
                           {entry.kind === "recipe" && (
@@ -512,9 +593,7 @@ export default function MealForm({
                           )}
                         </div>
                         <span className="text-xs text-gray-400 mt-0.5 block">
-                          {entry.kind === "food"
-                            ? `${entry.item.caloriesPerServing} cal · ${entry.item.proteinPerServing}g protein / serving`
-                            : "Cal & protein calculated on log"}
+                          {Math.round(entryCalPerServing)} cal · {Math.round(entryProteinPerServing)}g protein / serving
                         </span>
                       </button>
                     </div>
@@ -548,12 +627,10 @@ export default function MealForm({
                     onChange={(e) => setMultiplier(e.target.value)}
                     className="w-20 px-3 py-2 border border-gray-300 rounded-xl text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
-                  {selected.kind === "food" && (
-                    <span className="text-xs text-gray-400">
-                      ≈ {Math.round(selected.item.caloriesPerServing * (parseFloat(multiplier) || 1))} cal
-                      · {Math.round(selected.item.proteinPerServing * (parseFloat(multiplier) || 1))}g
-                    </span>
-                  )}
+                  <span className="text-xs text-gray-400">
+                    ≈ {Math.round(calPerServing(selected) * (parseFloat(multiplier) || 1))} cal
+                    · {Math.round(proteinPerServing(selected) * (parseFloat(multiplier) || 1))}g
+                  </span>
                 </div>
                 <button
                   onClick={handleAddToMeal}
@@ -564,22 +641,22 @@ export default function MealForm({
               </div>
             )}
 
-            {/* Quick links */}
+            {/* Quick links — saves draft before navigating */}
             <div className="px-4 py-3 border-t border-gray-100 shrink-0 flex gap-3">
-              <Link
-                href={`/food/new?returnTo=/meal/new`}
+              <button
+                type="button"
+                onClick={() => navigateWithDraft(`/food/new?returnTo=${returnToEncoded}`)}
                 className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-500 font-medium text-sm text-center hover:bg-gray-50"
-                onClick={closePicker}
               >
                 + New Food
-              </Link>
-              <Link
-                href={`/recipe/new?returnTo=/meal/new`}
+              </button>
+              <button
+                type="button"
+                onClick={() => navigateWithDraft(`/recipe/new?returnTo=${returnToEncoded}`)}
                 className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-500 font-medium text-sm text-center hover:bg-gray-50"
-                onClick={closePicker}
               >
                 + New Recipe
-              </Link>
+              </button>
             </div>
           </div>
         </div>

@@ -136,6 +136,7 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
 
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [displayMode, setDisplayMode] = useState<"measure" | "weight">("measure");
 
   // ─── Derived ───────────────────────────────────────────────────────────────
 
@@ -182,8 +183,9 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
     setSelectedIng(ing);
     setPickerMeasureUnit(ing.servingMeasureUnit ?? "cups");
     setPickerWeightUnit(ing.servingWeightUnit ?? "g");
-    setPickerMeasureAmt("");
-    setPickerWeightAmt("");
+    // Pre-fill with this ingredient's defined serving size
+    setPickerMeasureAmt(ing.servingMeasureAmount != null ? String(ing.servingMeasureAmount) : "");
+    setPickerWeightAmt(ing.servingWeightAmount != null ? String(ing.servingWeightAmount) : "");
     setPickerStep("amount");
   }
 
@@ -262,13 +264,15 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
 
-  function formatRowAmount(row: IngredientRow) {
-    const parts: string[] = [];
-    if (row.amountMeasure && row.measureUnit)
-      parts.push(`${row.amountMeasure} ${row.measureUnit}`);
-    if (row.amountWeight && row.weightUnit)
-      parts.push(`${row.amountWeight} ${row.weightUnit}`);
-    return parts.join(" · ") || "—";
+  function formatRowAmount(row: IngredientRow): string {
+    if (displayMode === "measure") {
+      if (row.amountMeasure && row.measureUnit) return `${row.amountMeasure} ${row.measureUnit}`;
+      if (row.amountWeight && row.weightUnit) return `${row.amountWeight} ${row.weightUnit}`;
+    } else {
+      if (row.amountWeight && row.weightUnit) return `${row.amountWeight} ${row.weightUnit}`;
+      if (row.amountMeasure && row.measureUnit) return `${row.amountMeasure} ${row.measureUnit}`;
+    }
+    return "—";
   }
 
   // ─── Render ────────────────────────────────────────────────────────────────
@@ -314,13 +318,24 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 Ingredients
               </label>
-              <button
-                type="button"
-                onClick={openPicker}
-                className="text-sm font-medium text-blue-600 hover:text-blue-800"
-              >
-                + Add Ingredient
-              </button>
+              <div className="flex items-center gap-3">
+                {rows.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setDisplayMode((m) => m === "measure" ? "weight" : "measure")}
+                    className="text-xs font-medium text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg px-2 py-1"
+                  >
+                    {displayMode === "measure" ? "Show weight" : "Show measure"}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={openPicker}
+                  className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                >
+                  + Add Ingredient
+                </button>
+              </div>
             </div>
 
             {rows.length === 0 ? (
