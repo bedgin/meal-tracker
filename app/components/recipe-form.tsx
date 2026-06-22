@@ -67,15 +67,69 @@ function popDraft(): Draft | null {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+// Volume → mL and weight → g tables for cross-unit derivation
+const VOL_TO_ML: Record<string, number> = { cup: 236.588, tbsp: 14.787, tsp: 4.929 };
+const WEIGHT_TO_G: Record<string, number> = { g: 1, oz: 28.3495, lb: 453.592 };
+
+/**
+ * Show the recipe ingredient amount in the chosen display mode.
+ *
+ * If the stored value for that mode is missing, we try to derive it from the
+ * ingredient's defined serving size using a simple ratio:
+ *   derivedWeight = (recipeAmount / servingAmount) × servingWeight
+ * Units are normalised through mL / g so cross-unit pairs work
+ * (e.g. recipe in tbsp, serving defined in cups).
+ */
 function formatRowAmount(row: IngredientRow, mode: "measure" | "weight"): string {
+  const ing = row.ingredient;
+
   if (mode === "measure") {
-    if (row.amountMeasure && row.measureUnit) return `${row.amountMeasure} ${row.measureUnit}`;
-    if (row.amountWeight && row.weightUnit) return `${row.amountWeight} ${row.weightUnit}`;
+    // Prefer stored measure
+    if (row.amountMeasure != null && row.measureUnit)
+      return `${row.amountMeasure} ${row.measureUnit}`;
+
+    // Derive measure from stored weight using ingredient serving ratio
+    if (
+      row.amountWeight != null && row.weightUnit &&
+      ing.servingWeightAmount && ing.servingWeightUnit &&
+      ing.servingMeasureAmount && ing.servingMeasureUnit
+    ) {
+      const recipeG = row.amountWeight * (WEIGHT_TO_G[row.weightUnit] ?? 1);
+      const servingG = ing.servingWeightAmount * (WEIGHT_TO_G[ing.servingWeightUnit] ?? 1);
+      const servingMl = ing.servingMeasureAmount * (VOL_TO_ML[ing.servingMeasureUnit] ?? 1);
+      const derivedMl = (recipeG / servingG) * servingMl;
+      const derivedAmt = derivedMl / (VOL_TO_ML[ing.servingMeasureUnit] ?? 1);
+      return `${+derivedAmt.toFixed(2)} ${ing.servingMeasureUnit}`;
+    }
+
+    // Last resort: show whatever is stored
+    if (row.amountWeight != null && row.weightUnit)
+      return `${row.amountWeight} ${row.weightUnit}`;
+    return "—";
   } else {
-    if (row.amountWeight && row.weightUnit) return `${row.amountWeight} ${row.weightUnit}`;
-    if (row.amountMeasure && row.measureUnit) return `${row.amountMeasure} ${row.measureUnit}`;
+    // Prefer stored weight
+    if (row.amountWeight != null && row.weightUnit)
+      return `${row.amountWeight} ${row.weightUnit}`;
+
+    // Derive weight from stored measure using ingredient serving ratio
+    if (
+      row.amountMeasure != null && row.measureUnit &&
+      ing.servingMeasureAmount && ing.servingMeasureUnit &&
+      ing.servingWeightAmount && ing.servingWeightUnit
+    ) {
+      const recipeMl = row.amountMeasure * (VOL_TO_ML[row.measureUnit] ?? 1);
+      const servingMl = ing.servingMeasureAmount * (VOL_TO_ML[ing.servingMeasureUnit] ?? 1);
+      const servingG = ing.servingWeightAmount * (WEIGHT_TO_G[ing.servingWeightUnit] ?? 1);
+      const derivedG = (recipeMl / servingMl) * servingG;
+      const derivedAmt = derivedG / (WEIGHT_TO_G[ing.servingWeightUnit] ?? 1);
+      return `${+derivedAmt.toFixed(1)} ${ing.servingWeightUnit}`;
+    }
+
+    // Last resort: show whatever is stored
+    if (row.amountMeasure != null && row.measureUnit)
+      return `${row.amountMeasure} ${row.measureUnit}`;
+    return "—";
   }
-  return "—";
 }
 
 // ─── Component ───────────────────────────────────────────────────────────────
