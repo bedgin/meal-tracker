@@ -65,6 +65,19 @@ function popDraft(): Draft | null {
   }
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+function formatRowAmount(row: IngredientRow, mode: "measure" | "weight"): string {
+  if (mode === "measure") {
+    if (row.amountMeasure && row.measureUnit) return `${row.amountMeasure} ${row.measureUnit}`;
+    if (row.amountWeight && row.weightUnit) return `${row.amountWeight} ${row.weightUnit}`;
+  } else {
+    if (row.amountWeight && row.weightUnit) return `${row.amountWeight} ${row.weightUnit}`;
+    if (row.amountMeasure && row.measureUnit) return `${row.amountMeasure} ${row.measureUnit}`;
+  }
+  return "—";
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) {
@@ -264,16 +277,6 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
 
   // ─── Helpers ───────────────────────────────────────────────────────────────
 
-  function formatRowAmount(row: IngredientRow): string {
-    if (displayMode === "measure") {
-      if (row.amountMeasure && row.measureUnit) return `${row.amountMeasure} ${row.measureUnit}`;
-      if (row.amountWeight && row.weightUnit) return `${row.amountWeight} ${row.weightUnit}`;
-    } else {
-      if (row.amountWeight && row.weightUnit) return `${row.amountWeight} ${row.weightUnit}`;
-      if (row.amountMeasure && row.measureUnit) return `${row.amountMeasure} ${row.measureUnit}`;
-    }
-    return "—";
-  }
 
   // ─── Render ────────────────────────────────────────────────────────────────
 
@@ -351,7 +354,7 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
                         {row.ingredient.name}
                       </p>
                       <p className="text-xs text-gray-400 mt-0.5">
-                        {formatRowAmount(row)}
+                        {formatRowAmount(row, displayMode)}
                       </p>
                     </div>
                     <button
