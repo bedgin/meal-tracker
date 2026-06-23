@@ -621,11 +621,11 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
                         onChange={(e) => setPickerMeasureUnit(e.target.value)}
                         className="px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                       >
-                        <option value="items">Items</option>
                         <option value="cups">Cups</option>
                         <option value="tbsp">Tablespoons</option>
                         <option value="tsp">Teaspoons</option>
                         <option value="scoop">Scoops</option>
+                        <option value="items">Items</option>
                       </select>
                     </div>
                   </div>
