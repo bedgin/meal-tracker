@@ -583,9 +583,6 @@ export default function MealForm({
                           {entry.item.isFavorite && (
                             <span className="text-yellow-400 text-xs">★</span>
                           )}
-                          {entry.kind === "recipe" && (
-                            <span className="text-xs text-purple-400 font-medium">recipe</span>
-                          )}
                         </div>
                         <span className="text-xs text-gray-400 mt-0.5 block">
                           {Math.round(entryCalPerServing)} cal · {Math.round(entryProteinPerServing)}g protein / serving
