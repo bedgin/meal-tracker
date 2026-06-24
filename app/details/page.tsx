@@ -2,16 +2,10 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getDailyTotals } from "@/app/actions/meals";
+import LocalTime from "./LocalTime";
 
 const MEAL_ORDER = ["Breakfast", "Lunch", "Dinner", "Snack"] as const;
 type MealType = (typeof MEAL_ORDER)[number];
-
-function formatTime(date: Date): string {
-  return new Date(date).toLocaleTimeString([], {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
 
 function formatDate(dateStr: string): string {
   const [year, month, day] = dateStr.split("-").map(Number);
@@ -121,7 +115,7 @@ export default async function DayDetailsPage({
                         className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 active:bg-gray-100"
                       >
                         <span className="text-xs text-gray-400">
-                          {formatTime(meal.time)}
+                          <LocalTime iso={meal.time.toISOString()} />
                         </span>
                         <div className="flex items-center gap-3">
                           <span className="text-sm font-semibold text-gray-700 tabular-nums">
