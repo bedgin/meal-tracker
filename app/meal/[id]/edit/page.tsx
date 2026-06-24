@@ -27,7 +27,7 @@ export default async function EditMealPage({
   if (!meal) notFound();
 
   const dateStr = new Date(meal.date).toISOString().split("T")[0];
-  const timeStr = new Date(meal.time).toTimeString().slice(0, 5);
+  const timeStr = meal.time.toISOString(); // pass UTC ISO string; client converts to local time
 
   return (
     <MealForm

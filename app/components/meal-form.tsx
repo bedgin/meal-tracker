@@ -141,8 +141,16 @@ export default function MealForm({
   // ─── Form state ────────────────────────────────────────────────────────────
 
   const [date, setDate] = useState(defaultDate);
-  // Compute quarter-hour client-side when no defaultTime provided (new meal)
-  const [time, setTime] = useState(() => defaultTime ?? currentQuarterHour());
+  // Compute quarter-hour client-side when no defaultTime provided (new meal).
+  // When editing, defaultTime is a UTC ISO string — convert to local HH:MM in the browser.
+  const [time, setTime] = useState(() => {
+    if (!defaultTime) return currentQuarterHour();
+    if (defaultTime.includes("T")) {
+      const d = new Date(defaultTime);
+      return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+    }
+    return defaultTime;
+  });
   const [mealType, setMealType] = useState(defaultMealType);
 
   // Meal rows — initialise from existing meal if editing
