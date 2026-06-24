@@ -516,7 +516,7 @@ export default function MealForm({
           className="fixed inset-0 z-50 flex flex-col justify-end bg-black/40"
           onClick={(e) => { if (e.target === e.currentTarget) closePicker(); }}
         >
-          <div className="bg-white rounded-t-2xl flex flex-col max-h-[90vh] max-w-lg mx-auto w-full">
+          <div className="bg-white rounded-t-2xl flex flex-col h-[90vh] max-w-lg mx-auto w-full">
             {/* Modal header */}
             <div className="px-4 py-3 flex items-center justify-between border-b border-gray-100 shrink-0">
               <h2 className="font-semibold text-gray-900 text-base">Find Food or Recipe</h2>
