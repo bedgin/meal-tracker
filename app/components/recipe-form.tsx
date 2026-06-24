@@ -256,6 +256,41 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
     setPickerStep("amount");
   }
 
+  // ─── Amount sync helpers ───────────────────────────────────────────────────
+  // When one field changes, derive the other using the ingredient serving ratio.
+  // Works for any unit pair as long as both use the same unit system (ratio math).
+
+  function deriveWeight(measureAmt: string) {
+    if (!selectedIng) return;
+    const num = parseFloat(measureAmt);
+    if (isNaN(num) || num <= 0) return;
+    const { servingMeasureAmount: sma, servingMeasureUnit: smu,
+            servingWeightAmount: swa, servingWeightUnit: swu } = selectedIng;
+    if (!sma || !smu || !swa || !swu) return;
+    // ratio: how many servings is the entered amount?
+    const recipeNorm = num * (VOL_TO_ML[pickerMeasureUnit] ?? 1);
+    const servingNorm = sma * (VOL_TO_ML[smu] ?? 1);
+    const ratio = recipeNorm / servingNorm;
+    const derivedG = ratio * swa * (WEIGHT_TO_G[swu] ?? 1);
+    const derivedAmt = derivedG / (WEIGHT_TO_G[pickerWeightUnit] ?? 1);
+    setPickerWeightAmt(String(+derivedAmt.toFixed(1)));
+  }
+
+  function deriveMeasure(weightAmt: string) {
+    if (!selectedIng) return;
+    const num = parseFloat(weightAmt);
+    if (isNaN(num) || num <= 0) return;
+    const { servingMeasureAmount: sma, servingMeasureUnit: smu,
+            servingWeightAmount: swa, servingWeightUnit: swu } = selectedIng;
+    if (!sma || !smu || !swa || !swu) return;
+    const recipeNorm = num * (WEIGHT_TO_G[pickerWeightUnit] ?? 1);
+    const servingNorm = swa * (WEIGHT_TO_G[swu] ?? 1);
+    const ratio = recipeNorm / servingNorm;
+    const derivedMl = ratio * sma * (VOL_TO_ML[smu] ?? 1);
+    const derivedAmt = derivedMl / (VOL_TO_ML[pickerMeasureUnit] ?? 1);
+    setPickerMeasureAmt(String(+derivedAmt.toFixed(2)));
+  }
+
   function handleAddToList() {
     if (!selectedIng || (!pickerMeasureAmt && !pickerWeightAmt)) return;
     setRows((prev) => [
@@ -612,7 +647,10 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
                         type="number"
                         inputMode="decimal"
                         value={pickerMeasureAmt}
-                        onChange={(e) => setPickerMeasureAmt(e.target.value)}
+                        onChange={(e) => {
+                          setPickerMeasureAmt(e.target.value);
+                          deriveWeight(e.target.value);
+                        }}
                         placeholder="Amount"
                         className="flex-1 min-w-0 px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                       />
@@ -639,7 +677,10 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
                         type="number"
                         inputMode="decimal"
                         value={pickerWeightAmt}
-                        onChange={(e) => setPickerWeightAmt(e.target.value)}
+                        onChange={(e) => {
+                          setPickerWeightAmt(e.target.value);
+                          deriveMeasure(e.target.value);
+                        }}
                         placeholder="Amount"
                         className="flex-1 min-w-0 px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                       />
