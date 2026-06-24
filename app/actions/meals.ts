@@ -194,14 +194,16 @@ export async function getDailyTotals(date: string) {
   return { totalCalories, totalProtein, meals };
 }
 
-/** Returns how many meals have been logged today — used for mealType default. */
-export async function getMealCountForDate(date: string) {
+/** Returns the meal types logged for a date — used for mealType default. */
+export async function getMealTypesForDate(date: string): Promise<string[]> {
   const userId = await requireUserId();
   const start = new Date(date);
   const end = new Date(date);
   end.setDate(end.getDate() + 1);
 
-  return prisma.meal.count({
+  const meals = await prisma.meal.findMany({
     where: { userId, date: { gte: start, lt: end } },
+    select: { mealType: true },
   });
+  return meals.map((m) => m.mealType);
 }
