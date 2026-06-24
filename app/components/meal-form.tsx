@@ -162,25 +162,28 @@ export default function MealForm({
     });
   });
 
-  // Restore draft on mount (new meal only)
+  // Restore draft on mount (new meal only); auto-open picker if no draft
   useEffect(() => {
     if (isEditing) return;
     const draft = popDraft();
-    if (!draft) return;
-    setDate(draft.date);
-    setTime(draft.time);
-    setMealType(draft.mealType);
-    setRows(
-      draft.rows.map((r) => ({
-        tempId: Math.random().toString(36).slice(2),
-        kind: r.kind,
-        itemId: r.itemId,
-        name: r.name,
-        caloriesPerServing: r.caloriesPerServing,
-        proteinPerServing: r.proteinPerServing,
-        servingsMultiplier: r.servingsMultiplier,
-      }))
-    );
+    if (draft) {
+      setDate(draft.date);
+      setTime(draft.time);
+      setMealType(draft.mealType);
+      setRows(
+        draft.rows.map((r) => ({
+          tempId: Math.random().toString(36).slice(2),
+          kind: r.kind,
+          itemId: r.itemId,
+          name: r.name,
+          caloriesPerServing: r.caloriesPerServing,
+          proteinPerServing: r.proteinPerServing,
+          servingsMultiplier: r.servingsMultiplier,
+        }))
+      );
+    } else {
+      setShowPicker(true);
+    }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Picker state ──────────────────────────────────────────────────────────
