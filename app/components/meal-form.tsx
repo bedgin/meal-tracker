@@ -535,7 +535,6 @@ export default function MealForm({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search foods and recipes…"
-                autoFocus
                 className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               />
             </div>
