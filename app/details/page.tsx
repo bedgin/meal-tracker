@@ -2,7 +2,6 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getDailyTotals } from "@/app/actions/meals";
-import DeleteMealButton from "./DeleteMealButton";
 
 const MEAL_ORDER = ["Breakfast", "Lunch", "Dinner", "Snack"] as const;
 type MealType = (typeof MEAL_ORDER)[number];
@@ -129,7 +128,7 @@ export default async function DayDetailsPage({
                             {Math.round(mealCals).toLocaleString()} cal
                           </span>
                           <span className="text-sm text-gray-400 tabular-nums">
-                            {Math.round(mealProtein)}g protein
+                            {Math.round(mealProtein).toLocaleString()}g protein
                           </span>
                           <svg
                             className="w-4 h-4 text-gray-300"
@@ -180,10 +179,6 @@ export default async function DayDetailsPage({
                         })}
                       </div>
 
-                      {/* Delete footer */}
-                      <div className="flex justify-end px-4 py-2 border-t border-gray-50">
-                        <DeleteMealButton mealId={meal.id} date={date} />
-                      </div>
                     </div>
                   );
                 })}

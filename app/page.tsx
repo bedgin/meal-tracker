@@ -70,8 +70,9 @@ export default async function HomePage({
           </button>
         </form>
         <DateNav date={date} today={today} />
-        {/* spacer to balance sign-out button */}
-        <div className="w-16" />
+        <Link href="/library" className="text-sm text-blue-600 font-medium px-1 py-1">
+          Library
+        </Link>
       </header>
 
       {/* Macro cards */}
@@ -154,23 +155,16 @@ export default async function HomePage({
             </p>
           )}
         </div>
+
+        <Link href={`/details?date=${date}`} className="block">
+          <button className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 font-medium text-sm bg-white hover:bg-gray-50 active:bg-gray-100">
+            Today's Meals
+          </button>
+        </Link>
       </div>
 
       {/* Action buttons */}
       <div className="px-4 pb-10 space-y-3">
-        <div className="grid grid-cols-2 gap-2">
-          <Link href={`/details?date=${date}`} className="block">
-            <button className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 font-medium text-sm bg-white hover:bg-gray-50 active:bg-gray-100">
-              See Details
-            </button>
-          </Link>
-          <Link href="/library" className="block">
-            <button className="w-full py-3 rounded-xl border border-gray-200 text-gray-600 font-medium text-sm bg-white hover:bg-gray-50 active:bg-gray-100">
-              Library
-            </button>
-          </Link>
-        </div>
-
         <Link href={`/meal/new?date=${date}`} className="block">
           <button className="w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-xl shadow-sm hover:bg-blue-700 active:bg-blue-800">
             + Add Meal
