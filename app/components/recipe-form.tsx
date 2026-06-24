@@ -410,55 +410,50 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
               <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 Ingredients
               </label>
-              <div className="flex items-center gap-3">
-                {rows.length > 0 && (
-                  <button
-                    type="button"
-                    onClick={() => setDisplayMode((m) => m === "measure" ? "weight" : "measure")}
-                    className="text-xs font-medium text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg px-2 py-1"
-                  >
-                    {displayMode === "measure" ? "Show weight" : "Show measure"}
-                  </button>
-                )}
+              {rows.length > 0 && (
                 <button
                   type="button"
-                  onClick={openPicker}
-                  className="text-sm font-medium text-blue-600 hover:text-blue-800"
+                  onClick={() => setDisplayMode((m) => m === "measure" ? "weight" : "measure")}
+                  className="text-xs font-medium text-gray-400 hover:text-gray-600 border border-gray-200 rounded-lg px-2 py-1"
                 >
-                  + Add Ingredient
+                  {displayMode === "measure" ? "Show weight" : "Show measure"}
                 </button>
-              </div>
+              )}
             </div>
 
-            {rows.length === 0 ? (
-              <div className="text-sm text-gray-400 text-center py-8 bg-white rounded-xl border border-dashed border-gray-200">
-                No ingredients yet — tap + Add Ingredient
-              </div>
-            ) : (
-              <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100 overflow-hidden">
-                {rows.map((row) => (
-                  <div key={row.tempId} className="flex items-center px-4 py-3 gap-3">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {row.ingredient.name}
-                      </p>
-                      <p className="text-xs text-gray-400 mt-0.5">
-                        {formatRowAmount(row, displayMode)}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() =>
-                        setRows((prev) => prev.filter((r) => r.tempId !== row.tempId))
-                      }
-                      className="text-gray-300 hover:text-red-400 text-xl leading-none shrink-0 px-1"
-                      aria-label="Remove"
-                    >
-                      ✕
-                    </button>
+            <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100 overflow-hidden">
+              {rows.map((row) => (
+                <div key={row.tempId} className="flex items-center px-4 py-3 gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {row.ingredient.name}
+                    </p>
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      {formatRowAmount(row, displayMode)}
+                    </p>
                   </div>
-                ))}
-              </div>
-            )}
+                  <button
+                    onClick={() =>
+                      setRows((prev) => prev.filter((r) => r.tempId !== row.tempId))
+                    }
+                    className="text-gray-300 hover:text-red-400 text-xl leading-none shrink-0 px-1"
+                    aria-label="Remove"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
+
+              {/* Inline Add row — always visible at the bottom */}
+              <button
+                type="button"
+                onClick={openPicker}
+                className="w-full flex items-center gap-3 px-4 py-3 text-blue-600 hover:bg-blue-50 active:bg-blue-100 transition-colors"
+              >
+                <span className="text-lg leading-none font-light">+</span>
+                <span className="text-sm font-medium">Add ingredient</span>
+              </button>
+            </div>
           </div>
 
           {/* Servings */}
