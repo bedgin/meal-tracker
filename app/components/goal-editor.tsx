@@ -2,6 +2,7 @@
 
 import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { Pencil } from "lucide-react";
 import { setCalorieGoal, setProteinGoal } from "@/app/actions/goals";
 
 export default function GoalEditor({
@@ -19,11 +20,12 @@ export default function GoalEditor({
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const accentColor = type === "calorie" ? "#FF7A1A" : "#FF5A6E";
+
   useEffect(() => {
     if (editing) inputRef.current?.select();
   }, [editing]);
 
-  // Keep value in sync if parent re-renders with new goal (e.g. after navigation)
   useEffect(() => {
     if (!editing) setValue(currentGoal?.toString() ?? "");
   }, [currentGoal, editing]);
@@ -52,7 +54,7 @@ export default function GoalEditor({
 
   if (editing) {
     return (
-      <div className="flex items-center gap-1 justify-end">
+      <div className="flex items-end gap-1 justify-end">
         <input
           ref={inputRef}
           type="number"
@@ -62,11 +64,12 @@ export default function GoalEditor({
           onBlur={save}
           onKeyDown={handleKeyDown}
           disabled={isPending}
-          className="w-20 text-right text-2xl font-bold text-gray-900 border-b-2 border-blue-500 bg-transparent outline-none"
+          style={{ borderBottomColor: accentColor, color: accentColor }}
+          className="w-24 text-right font-fredoka font-medium text-[40px] leading-none border-b-2 bg-transparent outline-none tabular-nums"
           placeholder="—"
         />
         {type === "protein" && (
-          <span className="text-base font-medium text-gray-400">g</span>
+          <span className="font-fredoka font-medium text-[22px] leading-none mb-0.5" style={{ color: accentColor }}>g</span>
         )}
       </div>
     );
@@ -75,18 +78,29 @@ export default function GoalEditor({
   return (
     <button
       onClick={() => setEditing(true)}
-      className="text-right group"
+      className="text-right flex flex-col items-end"
       title="Tap to edit goal"
     >
+      <span
+        className="font-jakarta font-semibold uppercase flex items-center gap-1 justify-end mb-1"
+        style={{ color: "#9A897B", fontSize: 11, letterSpacing: "0.8px" }}
+      >
+        GOAL <Pencil size={11} strokeWidth={2.5} />
+      </span>
       {currentGoal !== null ? (
-        <span className="text-2xl font-bold text-gray-900 group-hover:text-blue-600">
-          {Math.round(currentGoal).toLocaleString()}
+        <span
+          className="font-fredoka font-medium tabular-nums leading-none"
+          style={{ color: accentColor, fontSize: 40 }}
+        >
+          {type === "calorie"
+            ? Math.round(currentGoal).toLocaleString()
+            : Math.round(currentGoal)}
           {type === "protein" && (
-            <span className="text-base font-medium text-gray-400">g</span>
+            <span className="font-fredoka font-medium" style={{ fontSize: 22, color: accentColor }}>g</span>
           )}
         </span>
       ) : (
-        <span className="text-sm font-medium text-blue-500 group-hover:text-blue-700">
+        <span className="text-sm font-jakarta font-medium" style={{ color: accentColor }}>
           Set goal
         </span>
       )}

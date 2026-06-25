@@ -7,7 +7,12 @@ const config: Config = {
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        fredoka: ["var(--font-fredoka)", "sans-serif"],
+        jakarta: ["var(--font-jakarta)", "sans-serif"],
+      },
+    },
   },
   plugins: [],
 };
