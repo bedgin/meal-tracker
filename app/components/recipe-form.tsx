@@ -581,7 +581,6 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
                     value={pickerSearch}
                     onChange={(e) => setPickerSearch(e.target.value)}
                     placeholder="Search ingredients…"
-                    autoFocus
                     className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                   />
                 </div>

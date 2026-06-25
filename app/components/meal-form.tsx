@@ -275,6 +275,7 @@ export default function MealForm({
     setSelected(null);
     setMultiplier("1");
     setSearch("");
+    setShowPicker(false);
   }
 
   function updateMultiplier(tempId: string, value: string) {
@@ -439,19 +440,7 @@ export default function MealForm({
                       ✕
                     </button>
                   </div>
-                  {/* Servings multiplier */}
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-xs text-gray-400">Servings:</span>
-                    <input
-                      type="number"
-                      inputMode="decimal"
-                      step="0.5"
-                      min="0.1"
-                      value={row.servingsMultiplier}
-                      onChange={(e) => updateMultiplier(row.tempId, e.target.value)}
-                      className="w-16 px-2 py-1 border border-gray-200 rounded-lg text-sm text-center focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                  </div>
+
                 </div>
               ))}
 
