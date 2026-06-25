@@ -10,6 +10,7 @@ import {
   deleteIngredient,
 } from "@/app/actions/ingredients";
 import { searchUsdaFoods, type UsdaResult } from "@/app/actions/usda";
+import { ArrowLeft, Star, X } from "lucide-react";
 
 type Props = {
   ingredient?: Ingredient;
@@ -193,28 +194,37 @@ export default function IngredientForm({
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 max-w-lg mx-auto flex flex-col">
+    <main className="min-h-screen max-w-lg mx-auto flex flex-col" style={{ background: "#FFF7F0" }}>
       {/* Header */}
-      <header className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-3">
-        <Link href={returnTo} className="text-blue-600 font-medium text-sm shrink-0">
-          ← Back
+      <header className="sticky top-0 z-10 px-5 py-3 flex items-center" style={{ background: "#FFF7F0", borderBottom: "1px solid rgba(80,40,10,0.08)" }}>
+        <Link href={returnTo} className="flex items-center gap-1 shrink-0" style={{ color: "#FF7A1A" }}>
+          <ArrowLeft size={18} strokeWidth={2.5} />
+          <span className="font-jakarta font-medium text-base">Back</span>
         </Link>
-        <h1 className="text-base font-semibold text-gray-900 flex-1 truncate">
+        <h1 className="font-fredoka font-medium absolute left-0 right-0 text-center pointer-events-none" style={{ color: "#2B2018", fontSize: 22 }}>
           {isEditing ? "Edit Ingredient" : "Add Ingredient"}
         </h1>
-        <button
-          onClick={() => setIsFavorite((f) => !f)}
-          className="text-2xl shrink-0 leading-none"
-          title={isFavorite ? "Remove from favorites" : "Add to favorites"}
-        >
-          {isFavorite ? "★" : "☆"}
-        </button>
+        <div className="ml-auto">
+          <button
+            onClick={() => setIsFavorite((f) => !f)}
+            className="flex items-center justify-center shrink-0"
+            style={{ width: 44, height: 44, borderRadius: "50%", background: "#FBF1E9" }}
+            title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+          >
+            <Star
+              size={20}
+              fill={isFavorite ? "#FF9E1B" : "none"}
+              color={isFavorite ? "#FF9E1B" : "#D4C4B8"}
+              strokeWidth={1.5}
+            />
+          </button>
+        </div>
       </header>
 
-      <div className="flex-1 px-4 py-5 space-y-5 pb-4">
+      <div className="flex-1 px-5 py-5 space-y-5 pb-4">
         {/* Name + Autocomplete */}
         <div className="relative">
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+          <label className="block font-jakarta font-bold uppercase mb-1" style={{ color: "#9A897B", fontSize: 12, letterSpacing: 1 }}>
             Ingredient Name
           </label>
           <input
@@ -224,29 +234,33 @@ export default function IngredientForm({
             onChange={(e) => setName(e.target.value)}
             onFocus={() => setShowAutocomplete(true)}
             placeholder="e.g. Chicken breast"
-            className="w-full px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="w-full px-3 py-3 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
+            style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
           />
           {showAutocomplete && filtered.length > 0 && (
             <div
               ref={autocompleteRef}
-              className="absolute left-0 right-0 top-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-20 overflow-hidden max-h-52 overflow-y-auto"
+              className="absolute left-0 right-0 top-full mt-1 z-20 overflow-hidden max-h-52 overflow-y-auto"
+              style={{ background: "#fff", borderRadius: 16, boxShadow: "0 8px 24px rgba(80,40,10,0.08)" }}
             >
               {filtered.map((ing) => (
                 <button
                   key={ing.id}
                   type="button"
                   onMouseDown={() => fillFromIngredient(ing)}
-                  className="w-full text-left px-4 py-3 hover:bg-blue-50 active:bg-blue-100 border-b border-gray-100 last:border-0"
+                  className="w-full text-left px-4 py-3 last:border-0"
+                  style={{ borderBottom: "1px solid #F5ECE3" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#FFF1EA")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                 >
-                  <span className="text-sm font-medium text-gray-900">
+                  <span className="font-jakarta font-semibold" style={{ color: "#2B2018" }}>
                     {ing.name}
                   </span>
                   {ing.isFavorite && (
-                    <span className="ml-1 text-yellow-400 text-xs">★</span>
+                    <Star size={12} fill="#FF9E1B" color="#FF9E1B" className="inline ml-1 mb-0.5" />
                   )}
-                  <span className="block text-xs text-gray-400 mt-0.5">
-                    {ing.caloriesPerServing} cal · {ing.proteinPerServing}g
-                    protein
+                  <span className="block font-jakarta mt-0.5" style={{ fontSize: 13, color: "#9A897B" }}>
+                    {ing.caloriesPerServing} cal · {ing.proteinPerServing}g protein
                   </span>
                 </button>
               ))}
@@ -260,45 +274,50 @@ export default function IngredientForm({
             type="button"
             onClick={handleUsdaLookup}
             disabled={usdaLoading || !name.trim()}
-            className="w-full py-3 rounded-xl border border-blue-200 text-blue-600 font-medium text-sm bg-blue-50 hover:bg-blue-100 active:bg-blue-200 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full py-3 font-jakarta font-medium text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{ border: "1.5px solid rgba(255,122,26,0.35)", color: "#FF7A1A", background: "#FFF7F0", borderRadius: 14 }}
           >
-            {usdaLoading ? "Looking up…" : "🔍  Lookup Based on Name"}
+            {usdaLoading ? "Looking up…" : "Lookup Based on Name"}
           </button>
 
           {usdaError && (
-            <p className="text-sm text-red-500 mt-2 text-center">{usdaError}</p>
+            <p className="font-jakarta text-sm mt-2 text-center" style={{ color: "#FF5A4E" }}>{usdaError}</p>
           )}
 
           {showUsda && (
-            <div className="mt-2 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            <div className="mt-2 overflow-hidden" style={{ background: "#fff", borderRadius: 16, boxShadow: "0 8px 24px rgba(80,40,10,0.08)" }}>
+              <div className="flex items-center justify-between px-4 py-2" style={{ borderBottom: "1px solid #F5ECE3" }}>
+                <p className="font-jakarta font-bold uppercase" style={{ color: "#9A897B", fontSize: 12, letterSpacing: 1 }}>
                   USDA Results — tap to use
                 </p>
                 <button
                   onClick={() => setShowUsda(false)}
-                  className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+                  className="flex items-center justify-center"
+                  style={{ color: "#9A897B" }}
                 >
-                  ✕
+                  <X size={16} />
                 </button>
               </div>
-              <div className="max-h-64 overflow-y-auto divide-y divide-gray-100">
+              <div className="max-h-64 overflow-y-auto">
                 {usdaResults.map((result) => (
                   <button
                     key={result.fdcId}
                     type="button"
                     onClick={() => fillFromUsda(result)}
-                    className="w-full text-left px-4 py-3 hover:bg-blue-50 active:bg-blue-100"
+                    className="w-full text-left px-4 py-3"
+                    style={{ borderBottom: "1px solid #F5ECE3" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = "#FFF1EA")}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                   >
-                    <p className="text-sm font-medium text-gray-900 leading-snug">
+                    <p className="font-jakarta font-semibold leading-snug" style={{ color: "#2B2018" }}>
                       {result.description}
                     </p>
                     {result.brandOwner && (
-                      <p className="text-xs text-gray-400 mt-0.5">
+                      <p className="font-jakarta mt-0.5" style={{ fontSize: 13, color: "#9A897B" }}>
                         {result.brandOwner}
                       </p>
                     )}
-                    <p className="text-xs text-blue-600 mt-1">
+                    <p className="font-jakarta mt-1" style={{ fontSize: 13, color: "#FF7A1A" }}>
                       {result.caloriesPerServing !== null
                         ? `${Math.round(result.caloriesPerServing)} cal · ${result.proteinPerServing ?? 0}g protein / serving`
                         : result.caloriesPer100g !== null
@@ -314,11 +333,9 @@ export default function IngredientForm({
 
         {/* Serving size — measurement */}
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+          <label className="block font-jakarta font-bold uppercase mb-1" style={{ color: "#9A897B", fontSize: 12, letterSpacing: 1 }}>
             Serving Size — Measurement{" "}
-            <span className="text-gray-300 normal-case font-normal">
-              (optional)
-            </span>
+            <span className="normal-case font-normal" style={{ color: "#B7A597" }}>(optional)</span>
           </label>
           <div className="flex gap-2">
             <input
@@ -327,12 +344,14 @@ export default function IngredientForm({
               value={measureAmount}
               onChange={(e) => setMeasureAmount(e.target.value)}
               placeholder="Amount"
-              className="flex-1 min-w-0 px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="flex-1 min-w-0 px-3 py-3 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
+              style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
             />
             <select
               value={measureUnit}
               onChange={(e) => setMeasureUnit(e.target.value)}
-              className="px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="px-3 py-3 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
+              style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
             >
               <option value="cups">Cups</option>
               <option value="tbsp">Tablespoons</option>
@@ -345,11 +364,9 @@ export default function IngredientForm({
 
         {/* Serving size — weight */}
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+          <label className="block font-jakarta font-bold uppercase mb-1" style={{ color: "#9A897B", fontSize: 12, letterSpacing: 1 }}>
             Serving Size — Weight{" "}
-            <span className="text-gray-300 normal-case font-normal">
-              (optional)
-            </span>
+            <span className="normal-case font-normal" style={{ color: "#B7A597" }}>(optional)</span>
           </label>
           <div className="flex gap-2">
             <input
@@ -358,12 +375,14 @@ export default function IngredientForm({
               value={weightAmount}
               onChange={(e) => setWeightAmount(e.target.value)}
               placeholder="Amount"
-              className="flex-1 min-w-0 px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="flex-1 min-w-0 px-3 py-3 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
+              style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
             />
             <select
               value={weightUnit}
               onChange={(e) => setWeightUnit(e.target.value)}
-              className="px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="px-3 py-3 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
+              style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
             >
               <option value="g">Grams</option>
               <option value="oz">Oz</option>
@@ -374,7 +393,7 @@ export default function IngredientForm({
 
         {/* Calories */}
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+          <label className="block font-jakarta font-bold uppercase mb-1" style={{ color: "#9A897B", fontSize: 12, letterSpacing: 1 }}>
             Calories Per Serving
           </label>
           <input
@@ -383,13 +402,14 @@ export default function IngredientForm({
             value={calories}
             onChange={(e) => setCalories(e.target.value)}
             placeholder="0"
-            className="w-full px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="w-full px-3 py-3 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
+            style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
           />
         </div>
 
         {/* Protein */}
         <div>
-          <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">
+          <label className="block font-jakarta font-bold uppercase mb-1" style={{ color: "#9A897B", fontSize: 12, letterSpacing: 1 }}>
             Protein Per Serving (g)
           </label>
           <input
@@ -398,23 +418,25 @@ export default function IngredientForm({
             value={protein}
             onChange={(e) => setProtein(e.target.value)}
             placeholder="0"
-            className="w-full px-3 py-3 border border-gray-300 rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            className="w-full px-3 py-3 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
+            style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
           />
         </div>
 
         {error && (
-          <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+          <p className="font-jakarta text-sm px-3 py-2 rounded-xl" style={{ background: "#FFF1EA", color: "#FF5A4E" }}>
             {error}
           </p>
         )}
       </div>
 
       {/* Footer buttons */}
-      <div className="px-4 pb-10 pt-2 space-y-3">
+      <div className="px-5 pb-10 pt-3 space-y-3" style={{ boxShadow: "0 -6px 20px rgba(80,40,10,0.06)", background: "#FFF7F0" }}>
         <button
           onClick={handleSave}
           disabled={isPending}
-          className="w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-lg shadow-sm hover:bg-blue-700 active:bg-blue-800 disabled:opacity-60"
+          className="w-full flex items-center justify-center gap-2 text-white font-fredoka font-semibold disabled:opacity-60"
+          style={{ background: "linear-gradient(135deg, #FF9446, #FF6A12)", borderRadius: 20, fontSize: 19, paddingTop: 20, paddingBottom: 20, boxShadow: "0 8px 22px rgba(255,106,18,0.30)" }}
         >
           {isPending ? "Saving…" : isEditing ? "Save Changes" : "Save Ingredient"}
         </button>
@@ -423,11 +445,8 @@ export default function IngredientForm({
           <button
             onClick={handleDelete}
             disabled={isPending}
-            className={`w-full py-3 rounded-xl font-medium text-sm border transition-colors ${
-              deleteConfirm
-                ? "bg-red-600 text-white border-red-600"
-                : "border-red-200 text-red-500 bg-white hover:bg-red-50"
-            }`}
+            className="w-full py-3 rounded-xl font-jakarta font-medium text-sm border transition-colors"
+            style={deleteConfirm ? { background: "#FF5A4E", color: "#fff", border: "none" } : { background: "#fff", color: "#FF5A4E", border: "1.5px solid rgba(255,90,78,0.3)" }}
           >
             {deleteConfirm ? "Tap again to confirm delete" : "Delete Ingredient"}
           </button>

@@ -11,6 +11,7 @@ import {
 } from "@/app/actions/ingredients";
 import { deleteFood, toggleFoodFavorite } from "@/app/actions/foods";
 import { deleteRecipe, toggleRecipeFavorite } from "@/app/actions/recipes";
+import { ArrowLeft, Search, Star } from "lucide-react";
 
 type Tab = "ingredients" | "foods" | "recipes";
 
@@ -51,21 +52,15 @@ function StarButton({
         e.preventDefault();
         onClick();
       }}
-      className="p-1.5 rounded-lg hover:bg-gray-100 active:bg-gray-200 transition-colors"
+      className="p-1.5 rounded-lg transition-colors"
       aria-label={active ? "Remove from favorites" : "Add to favorites"}
     >
-      <svg
-        className={`w-5 h-5 ${active ? "text-yellow-400 fill-yellow-400" : "text-gray-300"}`}
-        viewBox="0 0 24 24"
-        stroke="currentColor"
+      <Star
+        size={20}
+        fill={active ? "#FF9E1B" : "none"}
+        color={active ? "#FF9E1B" : "#D4C4B8"}
         strokeWidth={1.5}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
-        />
-      </svg>
+      />
     </button>
   );
 }
@@ -95,11 +90,8 @@ function DeleteButton({
     <button
       onClick={handleClick}
       disabled={pending}
-      className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
-        armed
-          ? "bg-red-500 text-white"
-          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
-      }`}
+      className="px-2.5 py-1 rounded-lg font-jakarta font-semibold text-xs transition-colors"
+      style={armed ? { background: "#FF5A4E", color: "#fff" } : { background: "#FBF1E9", color: "#9A897B" }}
     >
       {pending ? "…" : armed ? "Confirm" : "Delete"}
     </button>
@@ -153,31 +145,35 @@ export default function LibraryClient({
   ];
 
   return (
-    <main className="min-h-screen flex flex-col bg-gray-50 max-w-lg mx-auto">
+    <main className="min-h-screen flex flex-col max-w-lg mx-auto" style={{ background: "#FFF7F0" }}>
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 sticky top-0 z-10">
-        <Link href="/" className="text-blue-600 font-medium text-sm px-1 py-1">
-          ← Back
+      <header className="sticky top-0 z-10 px-5 py-3 flex items-center" style={{ background: "#FFF7F0", borderBottom: "1px solid rgba(80,40,10,0.08)" }}>
+        <Link href="/" className="flex items-center gap-1 shrink-0" style={{ color: "#FF7A1A" }}>
+          <ArrowLeft size={18} strokeWidth={2.5} />
+          <span className="font-jakarta font-medium text-base">Back</span>
         </Link>
-        <h1 className="text-sm font-semibold text-gray-700">Library</h1>
-        <div className="w-14" />
+        <h1 className="font-fredoka font-medium absolute left-0 right-0 text-center pointer-events-none" style={{ color: "#2B2018", fontSize: 22 }}>
+          Library
+        </h1>
       </header>
 
       {/* Tab bar */}
-      <div className="flex gap-1 px-4 pt-4 pb-2">
+      <div className="flex gap-2 px-5 pt-4 pb-2">
         {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => handleTabChange(t.key)}
-            className={`flex-1 py-2 rounded-xl text-sm font-semibold transition-colors ${
+            className="flex-1 py-2 font-jakarta font-semibold text-sm transition-colors"
+            style={
               tab === t.key
-                ? "bg-blue-600 text-white shadow-sm"
-                : "bg-white text-gray-500 border border-gray-200"
-            }`}
+                ? { background: "linear-gradient(135deg, #FF9446, #FF6A12)", color: "#fff", borderRadius: 12, border: "none" }
+                : { background: "#fff", color: "#9A897B", borderRadius: 12, border: "1.5px solid rgba(255,122,26,0.22)" }
+            }
           >
             {t.label}
             <span
-              className={`ml-1 text-xs ${tab === t.key ? "text-blue-200" : "text-gray-400"}`}
+              className="ml-1 text-xs"
+              style={{ color: tab === t.key ? "rgba(255,255,255,0.7)" : "#B7A597" }}
             >
               {t.count}
             </span>
@@ -186,39 +182,44 @@ export default function LibraryClient({
       </div>
 
       {/* Search */}
-      <div className="px-4 pb-2">
-        <input
-          type="search"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setDeleteError(null);
-          }}
-          placeholder={`Search ${tab}…`}
-          className="w-full px-4 py-2.5 rounded-xl bg-white border border-gray-200 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
+      <div className="px-5 pb-2">
+        <div className="relative flex items-center">
+          <Search size={16} className="absolute left-3 pointer-events-none" style={{ color: "#B7A597" }} />
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setDeleteError(null);
+            }}
+            placeholder={`Search ${tab}…`}
+            className="w-full pl-9 pr-4 py-2.5 font-jakarta text-sm focus:outline-none focus:ring-2 focus:ring-[#FF7A1A]"
+            style={{ border: "1.5px solid rgba(255,122,26,0.25)", borderRadius: 14, background: "#FFFCF9", color: "#2B2018" }}
+          />
+        </div>
       </div>
 
       {/* Error banner */}
       {deleteError && (
-        <div className="mx-4 mb-2 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
+        <div className="mx-5 mb-2 px-4 py-3 font-jakarta text-sm" style={{ background: "#FFF1EA", color: "#FF5A4E", borderRadius: 16 }}>
           {deleteError}
         </div>
       )}
 
       {/* List */}
-      <div className="flex-1 px-4 pb-6 space-y-2">
+      <div className="flex-1 px-5 pb-6 space-y-2">
         {tab === "ingredients" && (
           <>
             {filteredIngredients.length === 0 && (
-              <p className="text-center text-gray-400 text-sm mt-10">
+              <p className="text-center font-jakarta text-sm mt-10" style={{ color: "#B7A597" }}>
                 {search ? "No results." : "No ingredients yet."}
               </p>
             )}
             {filteredIngredients.map((item) => (
               <div
                 key={item.id}
-                className="bg-white rounded-2xl shadow-sm flex items-center gap-2 px-3 py-3"
+                className="flex items-center gap-2 px-3 py-3"
+                style={{ background: "#fff", borderRadius: 16, boxShadow: "0 4px 12px rgba(80,40,10,0.06)" }}
               >
                 <StarButton
                   active={item.isFavorite}
@@ -233,10 +234,10 @@ export default function LibraryClient({
                   href={`/ingredient/${item.id}/edit`}
                   className="flex-1 min-w-0"
                 >
-                  <p className="text-sm font-medium text-gray-800 truncate">
+                  <p className="font-jakarta font-semibold truncate" style={{ fontSize: 15, color: "#2B2018" }}>
                     {item.name}
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="font-jakarta" style={{ fontSize: 13, color: "#9A897B" }}>
                     {servingLabel(item)} · {Math.round(item.caloriesPerServing)} cal · {Math.round(item.proteinPerServing)}g protein
                   </p>
                 </Link>
@@ -254,7 +255,7 @@ export default function LibraryClient({
               </div>
             ))}
             <Link href="/ingredient/new" className="block pt-2">
-              <button className="w-full py-3 rounded-xl border border-dashed border-gray-300 text-gray-500 text-sm font-medium hover:border-blue-400 hover:text-blue-500 transition-colors">
+              <button className="w-full py-3 font-jakarta font-medium text-sm transition-colors" style={{ border: "1.5px dashed rgba(255,122,26,0.35)", borderRadius: 14, background: "transparent", color: "#FF7A1A" }}>
                 + New Ingredient
               </button>
             </Link>
@@ -264,14 +265,15 @@ export default function LibraryClient({
         {tab === "foods" && (
           <>
             {filteredFoods.length === 0 && (
-              <p className="text-center text-gray-400 text-sm mt-10">
+              <p className="text-center font-jakarta text-sm mt-10" style={{ color: "#B7A597" }}>
                 {search ? "No results." : "No foods yet."}
               </p>
             )}
             {filteredFoods.map((item) => (
               <div
                 key={item.id}
-                className="bg-white rounded-2xl shadow-sm flex items-center gap-2 px-3 py-3"
+                className="flex items-center gap-2 px-3 py-3"
+                style={{ background: "#fff", borderRadius: 16, boxShadow: "0 4px 12px rgba(80,40,10,0.06)" }}
               >
                 <StarButton
                   active={item.isFavorite}
@@ -286,10 +288,10 @@ export default function LibraryClient({
                   href={`/food/${item.id}/edit`}
                   className="flex-1 min-w-0"
                 >
-                  <p className="text-sm font-medium text-gray-800 truncate">
+                  <p className="font-jakarta font-semibold truncate" style={{ fontSize: 15, color: "#2B2018" }}>
                     {item.name}
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="font-jakarta" style={{ fontSize: 13, color: "#9A897B" }}>
                     {servingLabel(item)} · {Math.round(item.caloriesPerServing)} cal · {Math.round(item.proteinPerServing)}g protein
                   </p>
                 </Link>
@@ -307,7 +309,7 @@ export default function LibraryClient({
               </div>
             ))}
             <Link href="/food/new" className="block pt-2">
-              <button className="w-full py-3 rounded-xl border border-dashed border-gray-300 text-gray-500 text-sm font-medium hover:border-blue-400 hover:text-blue-500 transition-colors">
+              <button className="w-full py-3 font-jakarta font-medium text-sm transition-colors" style={{ border: "1.5px dashed rgba(255,122,26,0.35)", borderRadius: 14, background: "transparent", color: "#FF7A1A" }}>
                 + New Food
               </button>
             </Link>
@@ -317,7 +319,7 @@ export default function LibraryClient({
         {tab === "recipes" && (
           <>
             {filteredRecipes.length === 0 && (
-              <p className="text-center text-gray-400 text-sm mt-10">
+              <p className="text-center font-jakarta text-sm mt-10" style={{ color: "#B7A597" }}>
                 {search ? "No results." : "No recipes yet."}
               </p>
             )}
@@ -327,7 +329,8 @@ export default function LibraryClient({
               return (
                 <div
                   key={item.id}
-                  className="bg-white rounded-2xl shadow-sm flex items-center gap-2 px-3 py-3"
+                  className="flex items-center gap-2 px-3 py-3"
+                  style={{ background: "#fff", borderRadius: 16, boxShadow: "0 4px 12px rgba(80,40,10,0.06)" }}
                 >
                   <StarButton
                     active={item.isFavorite}
@@ -342,10 +345,10 @@ export default function LibraryClient({
                     href={`/recipe/${item.id}/edit`}
                     className="flex-1 min-w-0"
                   >
-                    <p className="text-sm font-medium text-gray-800 truncate">
+                    <p className="font-jakarta font-semibold truncate" style={{ fontSize: 15, color: "#2B2018" }}>
                       {item.name}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="font-jakarta" style={{ fontSize: 13, color: "#9A897B" }}>
                       {item.ingredients.length} ingredient{item.ingredients.length !== 1 ? "s" : ""} · {item.servings} serving{item.servings !== 1 ? "s" : ""} · {Math.round(caloriesPerServing)} cal · {Math.round(proteinPerServing)}g protein ea.
                     </p>
                   </Link>
@@ -364,7 +367,7 @@ export default function LibraryClient({
               );
             })}
             <Link href="/recipe/new" className="block pt-2">
-              <button className="w-full py-3 rounded-xl border border-dashed border-gray-300 text-gray-500 text-sm font-medium hover:border-blue-400 hover:text-blue-500 transition-colors">
+              <button className="w-full py-3 font-jakarta font-medium text-sm transition-colors" style={{ border: "1.5px dashed rgba(255,122,26,0.35)", borderRadius: 14, background: "transparent", color: "#FF7A1A" }}>
                 + New Recipe
               </button>
             </Link>

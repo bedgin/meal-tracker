@@ -23,15 +23,11 @@ export default function SignInPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-center mb-1">Meal Tracker</h1>
-      <p className="text-center text-gray-500 mb-8">Sign in to your account</p>
+      <p className="text-center font-jakarta mb-8" style={{ color: "#9A897B" }}>Sign in to your account</p>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label
-            htmlFor="email"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label htmlFor="email" className="block font-jakarta font-bold uppercase mb-1" style={{ color: "#9A897B", fontSize: 12, letterSpacing: 1 }}>
             Email
           </label>
           <input
@@ -40,15 +36,13 @@ export default function SignInPage() {
             type="email"
             autoComplete="email"
             required
-            className="w-full px-3 py-3 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-3 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
+            style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
           />
         </div>
 
         <div>
-          <label
-            htmlFor="password"
-            className="block text-sm font-medium text-gray-700 mb-1"
-          >
+          <label htmlFor="password" className="block font-jakarta font-bold uppercase mb-1" style={{ color: "#9A897B", fontSize: 12, letterSpacing: 1 }}>
             Password
           </label>
           <div className="relative">
@@ -58,12 +52,14 @@ export default function SignInPage() {
               type={showPw ? "text" : "password"}
               autoComplete="current-password"
               required
-              className="w-full px-3 py-3 pr-11 border border-gray-300 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-3 pr-11 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
+              style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
             />
             <button
               type="button"
               onClick={() => setShowPw((s) => !s)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 hover:opacity-70"
+              style={{ color: "#B7A597" }}
               aria-label={showPw ? "Hide password" : "Show password"}
             >
               {showPw ? (
@@ -81,7 +77,7 @@ export default function SignInPage() {
         </div>
 
         {error && (
-          <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
+          <p className="font-jakarta text-sm px-3 py-2 rounded-xl" style={{ background: "#FFF1EA", color: "#FF5A4E" }}>
             {error}
           </p>
         )}
@@ -89,15 +85,16 @@ export default function SignInPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold text-base disabled:opacity-60"
+          className="w-full flex items-center justify-center text-white font-fredoka font-semibold disabled:opacity-60"
+          style={{ background: "linear-gradient(135deg, #FF9446, #FF6A12)", borderRadius: 18, fontSize: 19, paddingTop: 16, paddingBottom: 16, boxShadow: "0 8px 22px rgba(255,106,18,0.30)" }}
         >
           {loading ? "Signing in…" : "Sign In"}
         </button>
       </form>
 
-      <p className="text-center text-sm text-gray-500 mt-6">
+      <p className="text-center font-jakarta text-sm mt-6" style={{ color: "#9A897B" }}>
         Don&apos;t have an account?{" "}
-        <Link href="/sign-up" className="text-blue-600 font-medium">
+        <Link href="/sign-up" className="font-medium" style={{ color: "#FF7A1A" }}>
           Sign up
         </Link>
       </p>

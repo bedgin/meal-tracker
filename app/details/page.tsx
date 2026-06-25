@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getDailyTotals } from "@/app/actions/meals";
 import LocalTime from "./LocalTime";
+import { ArrowLeft, ChevronRight } from "lucide-react";
 
 const MEAL_ORDER = ["Breakfast", "Lunch", "Dinner", "Snack"] as const;
 type MealType = (typeof MEAL_ORDER)[number];
@@ -43,43 +44,39 @@ export default async function DayDetailsPage({
   const returnTo = `/details?date=${date}`;
 
   return (
-    <main className="min-h-screen flex flex-col bg-gray-50 max-w-lg mx-auto">
+    <main className="min-h-screen flex flex-col max-w-lg mx-auto" style={{ background: "#FFF7F0" }}>
       {/* Header */}
-      <header className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-100 sticky top-0 z-10">
-        <Link
-          href={`/?date=${date}`}
-          className="text-blue-600 font-medium text-sm px-1 py-1"
-        >
-          ← Back
+      <header className="sticky top-0 z-10 px-5 py-3 flex items-center" style={{ background: "#FFF7F0", borderBottom: "1px solid rgba(80,40,10,0.08)" }}>
+        <Link href={`/?date=${date}`} className="flex items-center gap-1 shrink-0" style={{ color: "#FF7A1A" }}>
+          <ArrowLeft size={18} strokeWidth={2.5} />
+          <span className="font-jakarta font-medium text-base">Back</span>
         </Link>
-        <h1 className="text-sm font-semibold text-gray-700">
+        <h1 className="font-fredoka font-medium absolute left-0 right-0 text-center pointer-events-none" style={{ color: "#2B2018", fontSize: 22 }}>
           {formatDate(date)}
         </h1>
-        <div className="w-14" />
       </header>
 
-      {/* Daily totals bar */}
-      <div className="mx-4 mt-4 bg-white rounded-2xl px-5 py-4 shadow-sm flex justify-around">
-        <div className="text-center">
-          <p className="text-2xl font-bold text-gray-900 tabular-nums">
+      {/* Daily totals strip */}
+      <div className="mx-5 mt-4 px-5 py-4 flex" style={{ background: "#FFF1EA", borderRadius: 18 }}>
+        <div className="flex-1">
+          <p className="font-jakarta font-bold uppercase" style={{ color: "#B07A4E", fontSize: 11, letterSpacing: 1 }}>Total Cal</p>
+          <p className="font-fredoka tabular-nums" style={{ fontSize: 32, color: "#FF7A1A", lineHeight: 1.1 }}>
             {Math.round(totalCalories).toLocaleString()}
           </p>
-          <p className="text-xs text-gray-400 mt-0.5">calories</p>
         </div>
-        <div className="w-px bg-gray-100" />
-        <div className="text-center">
-          <p className="text-2xl font-bold text-gray-900 tabular-nums">
-            {Math.round(totalProtein)}
-            <span className="text-base font-medium text-gray-400">g</span>
+        <div style={{ width: 1, background: "#F2E6DB", margin: "0 16px" }} />
+        <div className="flex-1">
+          <p className="font-jakarta font-bold uppercase" style={{ color: "#B07A4E", fontSize: 11, letterSpacing: 1 }}>Total Protein</p>
+          <p className="font-fredoka tabular-nums" style={{ fontSize: 32, color: "#FF5A6E", lineHeight: 1.1 }}>
+            {Math.round(totalProtein)}<span className="font-fredoka" style={{ fontSize: 18 }}>g</span>
           </p>
-          <p className="text-xs text-gray-400 mt-0.5">protein</p>
         </div>
       </div>
 
       {/* Meal groups */}
-      <div className="flex-1 px-4 py-4 space-y-5">
+      <div className="flex-1 px-5 py-4 space-y-5">
         {!hasMeals && (
-          <p className="text-center text-gray-400 text-sm mt-10">
+          <p className="text-center font-jakarta text-sm mt-10" style={{ color: "#B7A597" }}>
             No meals logged for this day.
           </p>
         )}
@@ -90,7 +87,7 @@ export default async function DayDetailsPage({
 
           return (
             <section key={type}>
-              <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2 px-1">
+              <h2 className="font-jakarta font-bold uppercase mb-2 px-1" style={{ color: "#9A897B", fontSize: 12, letterSpacing: 1 }}>
                 {type}
               </h2>
               <div className="space-y-2">
@@ -107,41 +104,31 @@ export default async function DayDetailsPage({
                   return (
                     <div
                       key={meal.id}
-                      className="bg-white rounded-2xl shadow-sm overflow-hidden"
+                      className="overflow-hidden"
+                      style={{ background: "#FFFFFF", borderRadius: 22, boxShadow: "0 8px 24px rgba(80,40,10,0.08)" }}
                     >
                       {/* Meal header — tappable to edit */}
                       <Link
                         href={`/meal/${meal.id}/edit?returnTo=${encodeURIComponent(returnTo)}`}
-                        className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 active:bg-gray-100"
+                        className="flex items-center justify-between px-4 py-3 active:opacity-70"
+                        style={{ background: "#FFFFFF" }}
                       >
-                        <span className="text-xs text-gray-400">
+                        <span className="font-jakarta text-xs" style={{ color: "#9A897B" }}>
                           <LocalTime iso={meal.time.toISOString()} />
                         </span>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-semibold text-gray-700 tabular-nums">
+                        <div className="flex items-center gap-2">
+                          <span className="font-fredoka font-medium tabular-nums" style={{ color: "#FF7A1A", fontSize: 16 }}>
                             {Math.round(mealCals).toLocaleString()} cal
                           </span>
-                          <span className="text-sm text-gray-400 tabular-nums">
-                            {Math.round(mealProtein).toLocaleString()}g protein
+                          <span className="font-fredoka font-medium tabular-nums" style={{ color: "#FF5A6E", fontSize: 16 }}>
+                            {Math.round(mealProtein)}g
                           </span>
-                          <svg
-                            className="w-4 h-4 text-gray-300"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M9 5l7 7-7 7"
-                            />
-                          </svg>
+                          <ChevronRight size={16} style={{ color: "#D4C4B8" }} />
                         </div>
                       </Link>
 
                       {/* Items list */}
-                      <div className="border-t border-gray-50">
+                      <div style={{ borderTop: "1px solid #F5ECE3" }}>
                         {meal.mealItems.map((item) => {
                           const name =
                             item.food?.name ?? item.recipe?.name ?? "Unknown";
@@ -152,19 +139,20 @@ export default async function DayDetailsPage({
                           return (
                             <div
                               key={item.id}
-                              className="flex items-center justify-between px-4 py-2.5 border-b border-gray-50 last:border-0"
+                              className="flex items-center justify-between px-4 py-2.5 last:border-0"
+                              style={{ borderBottom: "1px solid #F5ECE3" }}
                             >
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm text-gray-800 truncate">
+                                <p className="font-jakarta font-semibold truncate" style={{ fontSize: 15, color: "#2B2018" }}>
                                   {name}
                                 </p>
-                                <p className="text-xs text-gray-400">{label}</p>
+                                <p className="font-jakarta" style={{ fontSize: 13, color: "#9A897B" }}>{label}</p>
                               </div>
                               <div className="text-right ml-3 shrink-0">
-                                <p className="text-sm font-medium text-gray-700 tabular-nums">
+                                <p className="font-jakarta font-medium tabular-nums" style={{ fontSize: 14, color: "#FF7A1A" }}>
                                   {Math.round(item.caloriesSnapshot)} cal
                                 </p>
-                                <p className="text-xs text-gray-400 tabular-nums">
+                                <p className="font-jakarta tabular-nums" style={{ fontSize: 13, color: "#9A897B" }}>
                                   {Math.round(item.proteinSnapshot)}g
                                 </p>
                               </div>
@@ -183,9 +171,12 @@ export default async function DayDetailsPage({
       </div>
 
       {/* Add meal button */}
-      <div className="px-4 pb-10">
+      <div className="px-5 pb-10 pt-3">
         <Link href={`/meal/new?date=${date}&returnTo=${encodeURIComponent(returnTo)}`}>
-          <button className="w-full py-4 rounded-xl bg-blue-600 text-white font-bold text-xl shadow-sm hover:bg-blue-700 active:bg-blue-800">
+          <button
+            className="w-full flex items-center justify-center text-white font-fredoka font-semibold"
+            style={{ background: "linear-gradient(135deg, #FF9446, #FF6A12)", borderRadius: 20, fontSize: 19, paddingTop: 20, paddingBottom: 20, boxShadow: "0 8px 22px rgba(255,106,18,0.30)" }}
+          >
             + Add Meal
           </button>
         </Link>
