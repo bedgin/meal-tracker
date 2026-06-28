@@ -77,6 +77,15 @@ function popDraft(): Draft | null {
   } catch { return null; }
 }
 
+// ─── Unit conversion for food serving derivation ─────────────────────────────
+
+const VOL_TO_ML: Record<string, number> = {
+  cup: 236.588, cups: 236.588,
+  tbsp: 14.787,
+  tsp: 4.929,
+};
+const WEIGHT_TO_G: Record<string, number> = { g: 1, oz: 28.3495, lb: 453.592 };
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function currentQuarterHour(): string {
@@ -184,6 +193,12 @@ export default function MealForm({
   const [selected, setSelected] = useState<FoodOrRecipe | null>(null);
   const [multiplier, setMultiplier] = useState(1);
 
+  // Food-specific amount picker state
+  const [pickerMeasureAmt, setPickerMeasureAmt] = useState("");
+  const [pickerMeasureUnit, setPickerMeasureUnit] = useState("cups");
+  const [pickerWeightAmt, setPickerWeightAmt] = useState("");
+  const [pickerWeightUnit, setPickerWeightUnit] = useState("g");
+
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
@@ -212,6 +227,10 @@ export default function MealForm({
     setSearch("");
     setSelected(null);
     setMultiplier(1);
+    setPickerMeasureAmt("");
+    setPickerMeasureUnit("cups");
+    setPickerWeightAmt("");
+    setPickerWeightUnit("g");
     setShowPicker(true);
   }
 
@@ -222,11 +241,71 @@ export default function MealForm({
 
   function handleSelect(entry: FoodOrRecipe) {
     setSelected(entry);
-    setMultiplier(1);
+    if (entry.kind === "food") {
+      const f = entry.item;
+      setPickerMeasureAmt(f.servingMeasureAmount != null ? String(f.servingMeasureAmount) : "");
+      setPickerMeasureUnit(f.servingMeasureUnit ?? "cups");
+      setPickerWeightAmt(f.servingWeightAmount != null ? String(f.servingWeightAmount) : "");
+      setPickerWeightUnit(f.servingWeightUnit ?? "g");
+    } else {
+      setMultiplier(1);
+    }
   }
+
+  function deriveWeightForFood(food: Food, measureAmt: string, measureUnit?: string) {
+    const num = parseFloat(measureAmt);
+    if (isNaN(num) || num <= 0) return;
+    if (!food.servingMeasureAmount || !food.servingMeasureUnit || !food.servingWeightAmount || !food.servingWeightUnit) return;
+    const unit = measureUnit ?? pickerMeasureUnit;
+    const servingNorm = food.servingMeasureAmount * (VOL_TO_ML[food.servingMeasureUnit] ?? 1);
+    if (!servingNorm) return;
+    const ratio = (num * (VOL_TO_ML[unit] ?? 1)) / servingNorm;
+    const derivedG = ratio * food.servingWeightAmount * (WEIGHT_TO_G[food.servingWeightUnit] ?? 1);
+    setPickerWeightAmt(String(+(derivedG / (WEIGHT_TO_G[pickerWeightUnit] ?? 1)).toFixed(1)));
+  }
+
+  function deriveMeasureForFood(food: Food, weightAmt: string, weightUnit?: string) {
+    const num = parseFloat(weightAmt);
+    if (isNaN(num) || num <= 0) return;
+    if (!food.servingMeasureAmount || !food.servingMeasureUnit || !food.servingWeightAmount || !food.servingWeightUnit) return;
+    const unit = weightUnit ?? pickerWeightUnit;
+    const servingNorm = food.servingWeightAmount * (WEIGHT_TO_G[food.servingWeightUnit] ?? 1);
+    if (!servingNorm) return;
+    const ratio = (num * (WEIGHT_TO_G[unit] ?? 1)) / servingNorm;
+    const derivedMl = ratio * food.servingMeasureAmount * (VOL_TO_ML[food.servingMeasureUnit] ?? 1);
+    setPickerMeasureAmt(String(+(derivedMl / (VOL_TO_ML[pickerMeasureUnit] ?? 1)).toFixed(2)));
+  }
+
+  const pickerFoodNutrition = useMemo(() => {
+    if (!selected || selected.kind !== "food") return null;
+    const food = selected.item;
+    const measureNum = parseFloat(pickerMeasureAmt);
+    const weightNum = parseFloat(pickerWeightAmt);
+    let mult = 0;
+
+    if (measureNum > 0 && food.servingMeasureAmount && food.servingMeasureUnit) {
+      const servingNorm = food.servingMeasureAmount * (VOL_TO_ML[food.servingMeasureUnit] ?? 1);
+      if (servingNorm) mult = (measureNum * (VOL_TO_ML[pickerMeasureUnit] ?? 1)) / servingNorm;
+    }
+    if (!mult && weightNum > 0 && food.servingWeightAmount && food.servingWeightUnit) {
+      const servingNorm = food.servingWeightAmount * (WEIGHT_TO_G[food.servingWeightUnit] ?? 1);
+      if (servingNorm) mult = (weightNum * (WEIGHT_TO_G[pickerWeightUnit] ?? 1)) / servingNorm;
+    }
+
+    if (mult <= 0) return null;
+    return {
+      calories: Math.round(mult * food.caloriesPerServing),
+      protein: Math.round(mult * food.proteinPerServing),
+      multiplier: mult,
+    };
+  }, [selected, pickerMeasureAmt, pickerMeasureUnit, pickerWeightAmt, pickerWeightUnit]);
 
   function handleAddToMeal() {
     if (!selected) return;
+    const finalMultiplier = selected.kind === "food"
+      ? (pickerFoodNutrition?.multiplier ?? 1)
+      : multiplier;
+
     setRows((prev) => [
       ...prev,
       {
@@ -236,7 +315,7 @@ export default function MealForm({
         name: selected.item.name,
         caloriesPerServing: calPerServing(selected),
         proteinPerServing: proteinPerServing(selected),
-        servingsMultiplier: multiplier,
+        servingsMultiplier: finalMultiplier,
       },
     ]);
     setSelected(null);
@@ -711,7 +790,7 @@ export default function MealForm({
               )}
             </div>
 
-            {/* Selected item — servings drawer */}
+            {/* Selected item — amount drawer */}
             {selected && (
               <div
                 className="shrink-0 px-5 py-4 space-y-3"
@@ -736,55 +815,131 @@ export default function MealForm({
                   </button>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <span
-                    className="font-jakarta font-semibold shrink-0"
-                    style={{ color: "#9A897B", fontSize: 15 }}
-                  >
-                    Servings
-                  </span>
-                  {/* Stepper */}
-                  <div
-                    className="flex items-center"
-                    style={{
-                      border: "1.5px solid rgba(255,122,26,0.25)",
-                      borderRadius: 12,
-                      height: 40,
-                      overflow: "hidden",
-                    }}
-                  >
-                    <button
-                      onClick={stepDown}
-                      className="flex items-center justify-center"
-                      style={{ width: 40, height: 40, color: "#FF7A1A" }}
-                    >
-                      <Minus size={16} strokeWidth={2.5} />
-                    </button>
-                    <span
-                      className="font-jakarta font-semibold tabular-nums text-center"
-                      style={{ minWidth: 32, color: "#2B2018", fontSize: 15 }}
-                    >
-                      {multiplier}
+                {selected.kind === "food" ? (
+                  <>
+                    {/* By Measurement */}
+                    <div>
+                      <label className="block font-jakarta font-bold uppercase mb-1" style={{ color: "#9A897B", fontSize: 12, letterSpacing: 1 }}>
+                        By Measurement
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          value={pickerMeasureAmt}
+                          onChange={(e) => {
+                            setPickerMeasureAmt(e.target.value);
+                            deriveWeightForFood(selected.item, e.target.value);
+                          }}
+                          placeholder="Amount"
+                          className="flex-1 min-w-0 px-3 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
+                          style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
+                        />
+                        <select
+                          value={pickerMeasureUnit}
+                          onChange={(e) => {
+                            setPickerMeasureUnit(e.target.value);
+                            deriveWeightForFood(selected.item, pickerMeasureAmt, e.target.value);
+                          }}
+                          className="px-3 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
+                          style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
+                        >
+                          <option value="cups">Cups</option>
+                          <option value="tbsp">Tablespoons</option>
+                          <option value="tsp">Teaspoons</option>
+                          <option value="scoop">Scoops</option>
+                          <option value="items">Items</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* By Weight */}
+                    <div>
+                      <label className="block font-jakarta font-bold uppercase mb-1" style={{ color: "#9A897B", fontSize: 12, letterSpacing: 1 }}>
+                        By Weight
+                      </label>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          value={pickerWeightAmt}
+                          onChange={(e) => {
+                            setPickerWeightAmt(e.target.value);
+                            deriveMeasureForFood(selected.item, e.target.value);
+                          }}
+                          placeholder="Amount"
+                          className="flex-1 min-w-0 px-3 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
+                          style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
+                        />
+                        <select
+                          value={pickerWeightUnit}
+                          onChange={(e) => {
+                            setPickerWeightUnit(e.target.value);
+                            deriveMeasureForFood(selected.item, pickerWeightAmt, e.target.value);
+                          }}
+                          className="px-3 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
+                          style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
+                        >
+                          <option value="g">Grams</option>
+                          <option value="oz">Oz</option>
+                          <option value="lb">Lbs</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Live cal/protein preview */}
+                    {pickerFoodNutrition ? (
+                      <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: "#FFF5EE" }}>
+                        <div className="text-center flex-1">
+                          <p className="font-fredoka font-semibold" style={{ fontSize: 22, color: "#FF7A1A", lineHeight: 1 }}>
+                            {pickerFoodNutrition.calories}
+                          </p>
+                          <p className="font-jakarta uppercase" style={{ fontSize: 10, color: "#9A897B", letterSpacing: 1 }}>cal</p>
+                        </div>
+                        <div style={{ width: 1, height: 32, background: "#F2E6DB" }} />
+                        <div className="text-center flex-1">
+                          <p className="font-fredoka font-semibold" style={{ fontSize: 22, color: "#FF7A1A", lineHeight: 1 }}>
+                            {pickerFoodNutrition.protein}g
+                          </p>
+                          <p className="font-jakarta uppercase" style={{ fontSize: 10, color: "#9A897B", letterSpacing: 1 }}>protein</p>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="font-jakarta text-xs" style={{ color: "#FF9E1B" }}>
+                        Fill in at least one amount above.
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  /* Recipe: servings stepper */
+                  <div className="flex items-center gap-3">
+                    <span className="font-jakarta font-semibold shrink-0" style={{ color: "#9A897B", fontSize: 15 }}>
+                      Servings
                     </span>
-                    <button
-                      onClick={stepUp}
-                      className="flex items-center justify-center"
-                      style={{ width: 40, height: 40, color: "#FF7A1A" }}
+                    <div
+                      className="flex items-center"
+                      style={{ border: "1.5px solid rgba(255,122,26,0.25)", borderRadius: 12, height: 40, overflow: "hidden" }}
                     >
-                      <Plus size={16} strokeWidth={2.5} />
-                    </button>
+                      <button onClick={stepDown} className="flex items-center justify-center" style={{ width: 40, height: 40, color: "#FF7A1A" }}>
+                        <Minus size={16} strokeWidth={2.5} />
+                      </button>
+                      <span className="font-jakarta font-semibold tabular-nums text-center" style={{ minWidth: 32, color: "#2B2018", fontSize: 15 }}>
+                        {multiplier}
+                      </span>
+                      <button onClick={stepUp} className="flex items-center justify-center" style={{ width: 40, height: 40, color: "#FF7A1A" }}>
+                        <Plus size={16} strokeWidth={2.5} />
+                      </button>
+                    </div>
+                    <span className="font-jakarta font-medium" style={{ color: "#9A897B", fontSize: 13 }}>
+                      ≈ {Math.round(calPerServing(selected) * multiplier)} cal · {Math.round(proteinPerServing(selected) * multiplier)}g
+                    </span>
                   </div>
-                  <span
-                    className="font-jakarta font-medium"
-                    style={{ color: "#9A897B", fontSize: 13 }}
-                  >
-                    ≈ {Math.round(calPerServing(selected) * multiplier)} cal · {Math.round(proteinPerServing(selected) * multiplier)}g
-                  </span>
-                </div>
+                )}
 
                 <button
                   onClick={handleAddToMeal}
-                  className="w-full flex items-center justify-center gap-2 text-white font-fredoka font-semibold"
+                  disabled={selected.kind === "food" && !pickerMeasureAmt && !pickerWeightAmt}
+                  className="w-full flex items-center justify-center gap-2 text-white font-fredoka font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
                   style={{
                     background: "linear-gradient(135deg, #FF9446, #FF6A12)",
                     borderRadius: 18,

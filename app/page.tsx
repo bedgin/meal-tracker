@@ -6,6 +6,7 @@ import { getDailyTotals } from "@/app/actions/meals";
 import { getEffectiveGoalForDate } from "@/app/actions/goals";
 import DateNav from "@/app/components/date-nav";
 import GoalEditor from "@/app/components/goal-editor";
+import TodayRedirect from "@/app/components/today-redirect";
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -23,8 +24,11 @@ export default async function HomePage({
   if (!session) redirect("/sign-in");
 
   const { date: dateParam } = await searchParams;
-  const today = new Date().toISOString().split("T")[0];
+  const now = new Date();
+  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   const date = dateParam || today;
+
+  if (!dateParam) return <TodayRedirect />;
 
   const [{ totalCalories, totalProtein }, goal] = await Promise.all([
     getDailyTotals(date),

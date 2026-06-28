@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Ingredient, Recipe, RecipeIngredient } from "@prisma/client";
 import { createRecipe, updateRecipe, deleteRecipe } from "@/app/actions/recipes";
-import { calcRecipeNutrition } from "@/lib/nutrition";
+import { calcRecipeNutrition, convertToServings } from "@/lib/nutrition";
 import { ArrowLeft, Star, Search, X, Plus } from "lucide-react";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -261,15 +261,15 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
   // When one field changes, derive the other using the ingredient serving ratio.
   // Works for any unit pair as long as both use the same unit system (ratio math).
 
-  function deriveWeight(measureAmt: string) {
+  function deriveWeight(measureAmt: string, measureUnit?: string) {
     if (!selectedIng) return;
     const num = parseFloat(measureAmt);
     if (isNaN(num) || num <= 0) return;
     const { servingMeasureAmount: sma, servingMeasureUnit: smu,
             servingWeightAmount: swa, servingWeightUnit: swu } = selectedIng;
     if (!sma || !smu || !swa || !swu) return;
-    // ratio: how many servings is the entered amount?
-    const recipeNorm = num * (VOL_TO_ML[pickerMeasureUnit] ?? 1);
+    const unitToUse = measureUnit ?? pickerMeasureUnit;
+    const recipeNorm = num * (VOL_TO_ML[unitToUse] ?? 1);
     const servingNorm = sma * (VOL_TO_ML[smu] ?? 1);
     const ratio = recipeNorm / servingNorm;
     const derivedG = ratio * swa * (WEIGHT_TO_G[swu] ?? 1);
@@ -277,14 +277,15 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
     setPickerWeightAmt(String(+derivedAmt.toFixed(1)));
   }
 
-  function deriveMeasure(weightAmt: string) {
+  function deriveMeasure(weightAmt: string, weightUnit?: string) {
     if (!selectedIng) return;
     const num = parseFloat(weightAmt);
     if (isNaN(num) || num <= 0) return;
     const { servingMeasureAmount: sma, servingMeasureUnit: smu,
             servingWeightAmount: swa, servingWeightUnit: swu } = selectedIng;
     if (!sma || !smu || !swa || !swu) return;
-    const recipeNorm = num * (WEIGHT_TO_G[pickerWeightUnit] ?? 1);
+    const unitToUse = weightUnit ?? pickerWeightUnit;
+    const recipeNorm = num * (WEIGHT_TO_G[unitToUse] ?? 1);
     const servingNorm = swa * (WEIGHT_TO_G[swu] ?? 1);
     const ratio = recipeNorm / servingNorm;
     const derivedMl = ratio * sma * (VOL_TO_ML[smu] ?? 1);
@@ -307,6 +308,33 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
     ]);
     closePicker();
   }
+
+  const pickerNutrition = useMemo(() => {
+    if (!selectedIng) return null;
+    const measureNum = parseFloat(pickerMeasureAmt);
+    const weightNum = parseFloat(pickerWeightAmt);
+    let numServings = 0;
+
+    if (measureNum > 0 && selectedIng.servingMeasureAmount && selectedIng.servingMeasureUnit) {
+      numServings = convertToServings(
+        measureNum, pickerMeasureUnit,
+        selectedIng.servingMeasureAmount, selectedIng.servingMeasureUnit,
+        selectedIng.name
+      );
+    } else if (weightNum > 0 && selectedIng.servingWeightAmount && selectedIng.servingWeightUnit) {
+      numServings = convertToServings(
+        weightNum, pickerWeightUnit,
+        selectedIng.servingWeightAmount, selectedIng.servingWeightUnit,
+        selectedIng.name
+      );
+    }
+
+    if (numServings <= 0) return null;
+    return {
+      calories: Math.round(numServings * selectedIng.caloriesPerServing),
+      protein: Math.round(numServings * selectedIng.proteinPerServing),
+    };
+  }, [selectedIng, pickerMeasureAmt, pickerMeasureUnit, pickerWeightAmt, pickerWeightUnit]);
 
   function handleAddNewIngredient() {
     // Preserve current form state before navigating away
@@ -678,7 +706,10 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
                       />
                       <select
                         value={pickerMeasureUnit}
-                        onChange={(e) => setPickerMeasureUnit(e.target.value)}
+                        onChange={(e) => {
+                          setPickerMeasureUnit(e.target.value);
+                          deriveWeight(pickerMeasureAmt, e.target.value);
+                        }}
                         className="px-3 py-3 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
                         style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
                       >
@@ -710,7 +741,10 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
                       />
                       <select
                         value={pickerWeightUnit}
-                        onChange={(e) => setPickerWeightUnit(e.target.value)}
+                        onChange={(e) => {
+                          setPickerWeightUnit(e.target.value);
+                          deriveMeasure(pickerWeightAmt, e.target.value);
+                        }}
                         className="px-3 py-3 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
                         style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
                       >
@@ -721,11 +755,31 @@ export default function RecipeForm({ recipe, allIngredients, returnTo }: Props) 
                     </div>
                   </div>
 
-                  {!pickerMeasureAmt && !pickerWeightAmt && (
+                  {!pickerMeasureAmt && !pickerWeightAmt ? (
                     <p className="font-jakarta text-xs" style={{ color: "#FF9E1B" }}>
                       Fill in at least one amount above.
                     </p>
-                  )}
+                  ) : pickerNutrition ? (
+                    <div className="flex items-center gap-3 px-4 py-3 rounded-xl" style={{ background: "#FFF5EE" }}>
+                      <div className="text-center flex-1">
+                        <p className="font-fredoka font-semibold" style={{ fontSize: 22, color: "#FF7A1A", lineHeight: 1 }}>
+                          {pickerNutrition.calories}
+                        </p>
+                        <p className="font-jakarta uppercase" style={{ fontSize: 10, color: "#9A897B", letterSpacing: 1 }}>
+                          cal
+                        </p>
+                      </div>
+                      <div style={{ width: 1, height: 32, background: "#F2E6DB" }} />
+                      <div className="text-center flex-1">
+                        <p className="font-fredoka font-semibold" style={{ fontSize: 22, color: "#FF7A1A", lineHeight: 1 }}>
+                          {pickerNutrition.protein}g
+                        </p>
+                        <p className="font-jakarta uppercase" style={{ fontSize: 10, color: "#9A897B", letterSpacing: 1 }}>
+                          protein
+                        </p>
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
 
                 <div className="px-5 py-3 shrink-0" style={{ borderTop: "1px solid #F5ECE3" }}>
