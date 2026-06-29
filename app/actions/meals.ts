@@ -12,9 +12,12 @@ async function requireUserId() {
 }
 
 export type MealItemInput = {
-  itemType: "food" | "recipe";
+  itemType: "food" | "recipe" | "custom";
   foodId?: string;
   recipeId?: string;
+  customName?: string;
+  customCalories?: number;
+  customProtein?: number;
   servingsMultiplier: number;
 };
 
@@ -51,6 +54,13 @@ async function snapshotCalories(item: MealItemInput) {
     };
   }
 
+  if (item.itemType === "custom") {
+    return {
+      caloriesSnapshot: item.customCalories ?? 0,
+      proteinSnapshot: item.customProtein ?? 0,
+    };
+  }
+
   throw new Error("Invalid meal item");
 }
 
@@ -76,6 +86,7 @@ export async function logMeal(data: MealInput) {
           itemType: item.itemType,
           foodId: item.foodId ?? null,
           recipeId: item.recipeId ?? null,
+          customName: item.customName ?? null,
           servingsMultiplier: item.servingsMultiplier,
           caloriesSnapshot: item.caloriesSnapshot,
           proteinSnapshot: item.proteinSnapshot,
@@ -120,6 +131,7 @@ export async function updateMeal(id: string, data: MealInput) {
           itemType: item.itemType,
           foodId: item.foodId ?? null,
           recipeId: item.recipeId ?? null,
+          customName: item.customName ?? null,
           servingsMultiplier: item.servingsMultiplier,
           caloriesSnapshot: item.caloriesSnapshot,
           proteinSnapshot: item.proteinSnapshot,

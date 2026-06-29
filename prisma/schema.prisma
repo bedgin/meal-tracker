@@ -146,9 +146,10 @@ model Meal {
 model MealItem {
   id                String  @id @default(cuid())
   mealId            String
-  itemType          String  // food | recipe
+  itemType          String  // food | recipe | custom
   foodId            String?
   recipeId          String?
+  customName        String?
   servingsMultiplier Float   @default(1)
   caloriesSnapshot  Float
   proteinSnapshot   Float

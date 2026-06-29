@@ -24,7 +24,7 @@ type FoodOrRecipe =
 
 type MealRow = {
   tempId: string;
-  kind: "food" | "recipe";
+  kind: "food" | "recipe" | "custom";
   itemId: string;
   name: string;
   caloriesPerServing: number;
@@ -49,7 +49,7 @@ const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"] as const;
 const DRAFT_KEY = "meal-new-draft";
 
 type DraftRow = {
-  kind: "food" | "recipe";
+  kind: "food" | "recipe" | "custom";
   itemId: string;
   name: string;
   caloriesPerServing: number;
@@ -161,9 +161,9 @@ export default function MealForm({
     if (!meal) return [];
     return meal.mealItems.map((mi) => ({
       tempId: mi.id,
-      kind: mi.itemType as "food" | "recipe",
+      kind: mi.itemType as "food" | "recipe" | "custom",
       itemId: mi.foodId ?? mi.recipeId ?? "",
-      name: mi.food?.name ?? mi.recipe?.name ?? "Unknown",
+      name: mi.food?.name ?? mi.recipe?.name ?? mi.customName ?? "Unknown",
       caloriesPerServing: mi.caloriesSnapshot / mi.servingsMultiplier,
       proteinPerServing: mi.proteinSnapshot / mi.servingsMultiplier,
       servingsMultiplier: mi.servingsMultiplier,
@@ -202,6 +202,12 @@ export default function MealForm({
   const [error, setError] = useState<string | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
 
+  // Quick Add state
+  const [showQuickAdd, setShowQuickAdd] = useState(false);
+  const [quickName, setQuickName] = useState("");
+  const [quickCal, setQuickCal] = useState("");
+  const [quickProtein, setQuickProtein] = useState("");
+
   const catalog = useMemo(() => buildCatalog(foods, recipes), [foods, recipes]);
   const hasFavorites = catalog.some((e) => e.item.isFavorite);
 
@@ -231,12 +237,42 @@ export default function MealForm({
     setPickerMeasureUnit("cups");
     setPickerWeightAmt("");
     setPickerWeightUnit("g");
+    setShowQuickAdd(false);
     setShowPicker(true);
   }
 
   function closePicker() {
     setShowPicker(false);
     setSelected(null);
+    setShowQuickAdd(false);
+  }
+
+  function openQuickAdd() {
+    setSelected(null);
+    setQuickName("");
+    setQuickCal("");
+    setQuickProtein("");
+    setShowQuickAdd(true);
+  }
+
+  function handleAddQuickItem() {
+    const cal = parseFloat(quickCal);
+    const protein = parseFloat(quickProtein);
+    if (!quickName.trim() || isNaN(cal) || cal < 0) return;
+    setRows((prev) => [
+      ...prev,
+      {
+        tempId: Math.random().toString(36).slice(2),
+        kind: "custom",
+        itemId: "",
+        name: quickName.trim(),
+        caloriesPerServing: cal,
+        proteinPerServing: isNaN(protein) ? 0 : protein,
+        servingsMultiplier: 1,
+      },
+    ]);
+    setShowQuickAdd(false);
+    setShowPicker(false);
   }
 
   function handleSelect(entry: FoodOrRecipe) {
@@ -359,6 +395,9 @@ export default function MealForm({
           itemType: r.kind,
           foodId: r.kind === "food" ? r.itemId : undefined,
           recipeId: r.kind === "recipe" ? r.itemId : undefined,
+          customName: r.kind === "custom" ? r.name : undefined,
+          customCalories: r.kind === "custom" ? r.caloriesPerServing : undefined,
+          customProtein: r.kind === "custom" ? r.proteinPerServing : undefined,
           servingsMultiplier: r.servingsMultiplier,
         })),
       };
@@ -955,15 +994,78 @@ export default function MealForm({
               </div>
             )}
 
+            {/* Quick Add form */}
+            {showQuickAdd && (
+              <div
+                className="shrink-0 px-5 py-4 space-y-3"
+                style={{ borderTop: "1px solid #F2E6DB", boxShadow: "0 -4px 16px rgba(80,40,10,0.06)" }}
+              >
+                <div className="flex items-center justify-between">
+                  <p className="font-jakarta font-semibold" style={{ color: "#2B2018", fontSize: 17 }}>Quick Add</p>
+                  <button
+                    onClick={() => setShowQuickAdd(false)}
+                    className="flex items-center justify-center shrink-0"
+                    style={{ width: 30, height: 30, borderRadius: "50%", background: "#F7EFE7" }}
+                  >
+                    <X size={14} strokeWidth={2.5} color="#9A897B" />
+                  </button>
+                </div>
+                <input
+                  type="text"
+                  value={quickName}
+                  onChange={(e) => setQuickName(e.target.value)}
+                  placeholder="Name (e.g. Chipotle burrito)"
+                  className="w-full px-3 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
+                  style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
+                />
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={quickCal}
+                    onChange={(e) => setQuickCal(e.target.value)}
+                    placeholder="Calories"
+                    className="flex-1 min-w-0 px-3 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
+                    style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
+                  />
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    value={quickProtein}
+                    onChange={(e) => setQuickProtein(e.target.value)}
+                    placeholder="Protein (g)"
+                    className="flex-1 min-w-0 px-3 py-2.5 border rounded-xl text-base focus:outline-none focus:ring-2 focus:ring-[#FF7A1A] bg-white font-jakarta"
+                    style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
+                  />
+                </div>
+                <button
+                  onClick={handleAddQuickItem}
+                  disabled={!quickName.trim() || !quickCal || parseFloat(quickCal) < 0}
+                  className="w-full flex items-center justify-center gap-2 text-white font-fredoka font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{
+                    background: "linear-gradient(135deg, #FF9446, #FF6A12)",
+                    borderRadius: 18,
+                    fontSize: 18,
+                    paddingTop: 16,
+                    paddingBottom: 16,
+                    boxShadow: "0 6px 18px rgba(255,106,18,0.28)",
+                  }}
+                >
+                  <Plus size={18} strokeWidth={2.5} />
+                  Add to Meal
+                </button>
+              </div>
+            )}
+
             {/* Quick links footer */}
             <div
-              className="px-5 py-3 shrink-0 grid grid-cols-2 gap-3"
-              style={{ borderTop: "1px solid #F2E6DB" }}
+              className="px-5 py-3 shrink-0 grid grid-cols-3 gap-2"
+              style={{ borderTop: showQuickAdd ? "none" : "1px solid #F2E6DB" }}
             >
               <button
                 type="button"
                 onClick={() => navigateWithDraft(`/food/new?returnTo=${returnToEncoded}`)}
-                className="flex items-center justify-center gap-1.5 py-3 font-jakarta font-medium text-sm"
+                className="flex items-center justify-center py-3 font-jakarta font-medium text-sm"
                 style={{
                   border: "1.5px solid rgba(255,122,26,0.22)",
                   borderRadius: 14,
@@ -971,12 +1073,12 @@ export default function MealForm({
                   background: "#fff",
                 }}
               >
-                <Plus size={14} strokeWidth={2.5} /> New Food
+                New Food
               </button>
               <button
                 type="button"
                 onClick={() => navigateWithDraft(`/recipe/new?returnTo=${returnToEncoded}`)}
-                className="flex items-center justify-center gap-1.5 py-3 font-jakarta font-medium text-sm"
+                className="flex items-center justify-center py-3 font-jakarta font-medium text-sm"
                 style={{
                   border: "1.5px solid rgba(255,122,26,0.22)",
                   borderRadius: 14,
@@ -984,7 +1086,20 @@ export default function MealForm({
                   background: "#fff",
                 }}
               >
-                <Plus size={14} strokeWidth={2.5} /> New Recipe
+                New Recipe
+              </button>
+              <button
+                type="button"
+                onClick={openQuickAdd}
+                className="flex items-center justify-center py-3 font-jakarta font-medium text-sm"
+                style={{
+                  border: showQuickAdd ? "1.5px solid #FF7A1A" : "1.5px solid rgba(255,122,26,0.22)",
+                  borderRadius: 14,
+                  color: "#FF7A1A",
+                  background: showQuickAdd ? "#FFF1EA" : "#fff",
+                }}
+              >
+                Quick Add
               </button>
             </div>
           </div>

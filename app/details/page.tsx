@@ -131,9 +131,11 @@ export default async function DayDetailsPage({
                       <div style={{ borderTop: "1px solid #F5ECE3" }}>
                         {meal.mealItems.map((item) => {
                           const name =
-                            item.food?.name ?? item.recipe?.name ?? "Unknown";
+                            item.food?.name ?? item.recipe?.name ?? item.customName ?? "Unknown";
                           const label =
-                            item.servingsMultiplier === 1
+                            item.itemType === "custom"
+                              ? "Quick Add"
+                              : item.servingsMultiplier === 1
                               ? "1 serving"
                               : `${item.servingsMultiplier}× servings`;
                           return (
