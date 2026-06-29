@@ -74,6 +74,10 @@ Defined in `prisma/schema.prisma`. Tables:
 - [ ] Density lookup table for volume↔weight conversions in recipes
 - [ ] Soft-delete protection for ingredients/foods used in recipes or logged meals
 
+## Additional Features (complete)
+
+- [x] **Quick Add** — Log a one-off meal item (e.g. restaurant meal) by entering a name, calories, and protein directly, without creating a saved food. Stored as `itemType: "custom"` with a `customName` column on `MealItem`. Button appears in the Add Meal picker alongside New Food and New Recipe. Shows as "Quick Add" in Day Details.
+
 ---
 
 ## Key Decisions
