@@ -7,13 +7,7 @@ import { getEffectiveGoalForDate } from "@/app/actions/goals";
 import DateNav from "@/app/components/date-nav";
 import GoalEditor from "@/app/components/goal-editor";
 import TodayRedirect from "@/app/components/today-redirect";
-
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 12) return "Good morning 👋";
-  if (h < 17) return "Good afternoon 👋";
-  return "Good evening 👋";
-}
+import Greeting from "@/app/components/greeting";
 
 export default async function HomePage({
   searchParams,
@@ -63,7 +57,7 @@ export default async function HomePage({
         }}
       >
         <div className="flex items-center justify-between mb-1">
-          <p className="text-white text-sm font-jakarta font-medium">{greeting()}</p>
+          <Greeting />
           <form action={handleSignOut}>
             <button type="submit" className="text-white/70 text-xs font-jakarta hover:text-white">
               Sign out

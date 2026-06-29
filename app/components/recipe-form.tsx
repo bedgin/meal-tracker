@@ -69,7 +69,7 @@ function popDraft(): Draft | null {
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 // Volume → mL and weight → g tables for cross-unit derivation
-const VOL_TO_ML: Record<string, number> = { cup: 236.588, tbsp: 14.787, tsp: 4.929 };
+const VOL_TO_ML: Record<string, number> = { cup: 236.588, cups: 236.588, tbsp: 14.787, tsp: 4.929 };
 const WEIGHT_TO_G: Record<string, number> = { g: 1, oz: 28.3495, lb: 453.592 };
 
 /**

@@ -2,6 +2,7 @@
 
 const VOL_TO_ML: Record<string, number> = {
   cup: 236.588,
+  cups: 236.588,
   tbsp: 14.787,
   tsp: 4.929,
 };
@@ -44,7 +45,7 @@ function toGrams(amount: number, unit: string): number {
   return amount * (WEIGHT_TO_G[unit] ?? 1);
 }
 
-const VOL_UNITS = new Set(["cup", "tbsp", "tsp"]);
+const VOL_UNITS = new Set(["cup", "cups", "tbsp", "tsp"]);
 const WEIGHT_UNITS = new Set(["g", "oz", "lb"]);
 
 /**
