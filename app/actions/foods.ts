@@ -65,6 +65,20 @@ export async function deleteFood(id: string) {
   return { success: true };
 }
 
+// Upsert a food by name (used when syncing from an Ingredient record)
+export async function upsertFoodByName(data: FoodInput) {
+  const userId = await requireUserId();
+  const existing = await prisma.food.findFirst({
+    where: { userId, name: data.name },
+  });
+  if (existing) {
+    await prisma.food.update({ where: { id: existing.id }, data });
+  } else {
+    await prisma.food.create({ data: { ...data, userId } });
+  }
+  revalidatePath("/");
+}
+
 export async function toggleFoodFavorite(id: string) {
   const userId = await requireUserId();
   const food = await prisma.food.findFirst({ where: { id, userId } });

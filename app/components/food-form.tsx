@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { Food } from "@prisma/client";
 import { createFood, updateFood, deleteFood } from "@/app/actions/foods";
+import { upsertIngredientByName } from "@/app/actions/ingredients";
 import { searchUsdaFoods, type UsdaResult } from "@/app/actions/usda";
 import { ArrowLeft, Star, X } from "lucide-react";
 
@@ -38,6 +39,7 @@ export default function FoodForm({ food, existingFoods, returnTo }: Props) {
     food?.proteinPerServing?.toString() ?? ""
   );
   const [isFavorite, setIsFavorite] = useState(food?.isFavorite ?? false);
+  const [alsoIngredient, setAlsoIngredient] = useState(false);
 
   // Autocomplete
   const [showAutocomplete, setShowAutocomplete] = useState(false);
@@ -161,6 +163,7 @@ export default function FoodForm({ food, existingFoods, returnTo }: Props) {
       } else {
         await createFood(data);
       }
+      if (alsoIngredient) await upsertIngredientByName(data);
       router.push(returnTo);
     });
   }
@@ -410,6 +413,38 @@ export default function FoodForm({ food, existingFoods, returnTo }: Props) {
             style={{ borderColor: "#F2E6DB", color: "#2B2018" }}
           />
         </div>
+
+        {/* Also add as ingredient */}
+        <button
+          type="button"
+          onClick={() => setAlsoIngredient((v) => !v)}
+          className="w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl"
+          style={{ background: "#fff", border: `1.5px solid ${alsoIngredient ? "#FF7A1A" : "#F2E6DB"}` }}
+        >
+          <div
+            className="shrink-0 flex items-center justify-center"
+            style={{
+              width: 22, height: 22, borderRadius: 6,
+              background: alsoIngredient ? "#FF7A1A" : "transparent",
+              border: alsoIngredient ? "none" : "1.5px solid #D4C4B8",
+              transition: "all 0.15s",
+            }}
+          >
+            {alsoIngredient && (
+              <svg width="12" height="9" viewBox="0 0 12 9" fill="none">
+                <path d="M1 4L4.5 7.5L11 1" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </div>
+          <div className="text-left">
+            <p className="font-jakarta font-semibold" style={{ color: "#2B2018", fontSize: 15 }}>
+              Also add to Ingredients list
+            </p>
+            <p className="font-jakarta" style={{ color: "#9A897B", fontSize: 12 }}>
+              Makes this item available when building recipes
+            </p>
+          </div>
+        </button>
 
         {error && (
           <p className="font-jakarta text-sm px-3 py-2 rounded-xl" style={{ background: "#FFF1EA", color: "#FF5A4E" }}>
